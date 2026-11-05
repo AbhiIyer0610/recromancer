@@ -1,0 +1,45 @@
+# IMPORTANT: never ignore .kiro/ (or anything under it). Kiroween judges require it in the repo,
+# and ignoring it can disqualify the submission. scripts/check_submission_readiness.py enforces this.
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+coverage.xml
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+frontend/dist/
+.vite/
+
+# Env and secrets
+.env
+.env.*
+!.env.example
+*.pem
+
+# Editors and OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Vercel
+.vercel/
+
+# Test and tool output
+*.log
+playwright-report/
+test-results/
+.pgdata/
+Thumbs.db
