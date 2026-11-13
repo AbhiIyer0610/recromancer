@@ -33,4 +33,3 @@ New hires and maintainers inheriting code who need the *why* behind decisions, n
 Impersonating a person to deceive, ingesting private chat or email, or answering from model
 knowledge instead of evidence.
 
-#[[file:docs/SCOPE_AND_DESIGN.md]]

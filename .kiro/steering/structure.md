@@ -8,7 +8,7 @@ inclusion: always
 backend/src/recromancer/
   domain/      entities, ids, errors              (depends on nothing)
   grounding/   text utils, verifier               (stdlib only)
-  ingest/      chunking, normalisation, connectors, jobs
+  ingest/      pure pipeline logic: chunking, normalisation, job planning (domain only)
   retrieval/   rank fusion, retrievers (memory, postgres)
   llm/         gateway port, resilience, provider adapters, ModelRouter, fakes
   embed/       Embedder port and adapters
@@ -25,10 +25,15 @@ scripts/       secret_scan.py, check_submission_readiness.py, doctor.py
 ```
 
 ## Dependency rule
-`domain` and `grounding` import nothing from the project except `domain`. `service` may import
-`domain`, `grounding`, port modules and its own `ports`. `api` and `mcp` may import `service`.
-Adapters (`llm.providers`, `embed`, `retrieval`, `db`) implement ports and are wired only in the
-composition root. Never import upward.
+`domain`, `grounding` and `ingest` import nothing from the project except `domain`. `service` may
+import `domain`, `grounding`, port modules and its own `ports`. `api` and `mcp` may import
+`service` and `domain`. Adapters (`llm`, `embed`, `retrieval`, `db`) implement ports structurally,
+never import `service` or each other, and are wired only in `bootstrap.py` (the composition root).
+Network-facing source connectors are adapters in their own package, added by a later spec, not
+part of `ingest`. `config.py` and `observability.py` sit beside the stack. Never import upward.
+
+Layer order, top to bottom: `bootstrap`; `api` | `mcp`; `service`; `llm` | `embed` | `retrieval` |
+`db`; `grounding` | `ingest`; `domain`. Enforced by import-linter contracts in `backend/pyproject.toml`.
 
 ## Naming
 Modules are nouns; functions are verbs; ports are protocols named for the capability
