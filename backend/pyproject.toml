@@ -60,7 +60,7 @@ fail_under = 85
 # - lint-imports finds `recromancer` through the editable install; no PYTHONPATH needed.
 # - A [tool.importlinter] block with root_package only and zero contracts is rejected:
 #   "No contracts found in the configuration." (exit 1). At least one contract is
-#   required, so a trivial placeholder contract is kept below until task 1.2.
+#   required (task 1.2 declares contracts C1 to C8).
 # - Contract types and options accepted as designed: type = "forbidden" (source_modules,
 #   forbidden_modules, allow_indirect_imports), type = "independence" (modules), and
 #   type = "layers" (containers, layers). Unknown options are rejected
@@ -75,15 +75,105 @@ fail_under = 85
 #     does not exist."
 #   * A layer wrapped in parentheses, e.g. "(bootstrap)", is optional and is accepted when
 #     the module is absent. independence modules were only tested with existing modules.
-#   Consequence for task 1.2: create docstring-only stubs for config, observability and
+#   Consequence (applied in task 1.2): created docstring-only stubs for config, observability and
 #   bootstrap before declaring C1-C8, or wrap absent layers in parentheses.
 [tool.importlinter]
 root_package = "recromancer"
+include_external_packages = true
 
+# C1: domain imports nothing from the project and no third-party framework.
 [[tool.importlinter.contracts]]
-# Trivial placeholder contract so lint-imports has something to run; task 1.2
-# replaces it with contracts C1 to C8.
-name = "domain-is-pure-placeholder"
+name = "domain-is-pure"
 type = "forbidden"
 source_modules = ["recromancer.domain"]
-forbidden_modules = ["recromancer.api"]
+forbidden_modules = [
+  "recromancer.config", "recromancer.bootstrap", "recromancer.observability",
+  "recromancer.grounding", "recromancer.service", "recromancer.api", "recromancer.mcp",
+  "recromancer.ingest", "recromancer.retrieval", "recromancer.llm", "recromancer.embed",
+  "recromancer.db",
+  "pydantic", "fastapi", "httpx", "structlog", "psycopg", "psycopg_pool", "anyio",
+]
+
+# C2: grounding and ingest import domain only.
+[[tool.importlinter.contracts]]
+name = "pure-logic-imports-domain-only"
+type = "forbidden"
+source_modules = ["recromancer.grounding", "recromancer.ingest"]
+forbidden_modules = [
+  "recromancer.config", "recromancer.bootstrap", "recromancer.observability",
+  "recromancer.service", "recromancer.api", "recromancer.mcp",
+  "recromancer.retrieval", "recromancer.llm", "recromancer.embed", "recromancer.db",
+  "pydantic", "fastapi", "httpx", "structlog", "psycopg", "psycopg_pool", "anyio",
+]
+
+# C3: config may import domain, the stdlib and pydantic only.
+[[tool.importlinter.contracts]]
+name = "config-is-narrow"
+type = "forbidden"
+source_modules = ["recromancer.config"]
+forbidden_modules = [
+  "recromancer.bootstrap", "recromancer.observability", "recromancer.grounding",
+  "recromancer.ingest", "recromancer.service", "recromancer.api", "recromancer.mcp",
+  "recromancer.retrieval", "recromancer.llm", "recromancer.embed", "recromancer.db",
+  "fastapi", "httpx", "structlog", "psycopg", "psycopg_pool", "anyio",
+]
+
+# C4: service sees ports, domain and grounding only.
+[[tool.importlinter.contracts]]
+name = "service-uses-ports-only"
+type = "forbidden"
+source_modules = ["recromancer.service"]
+forbidden_modules = [
+  "recromancer.llm", "recromancer.embed", "recromancer.retrieval", "recromancer.db",
+  "recromancer.ingest", "recromancer.api", "recromancer.mcp", "recromancer.bootstrap",
+  "recromancer.config", "recromancer.observability",
+  "psycopg", "psycopg_pool", "httpx",
+]
+
+# C5: delivery layers skip adapters. api -> service -> grounding is a legal chain.
+[[tool.importlinter.contracts]]
+name = "delivery-skips-adapters"
+type = "forbidden"
+source_modules = ["recromancer.api", "recromancer.mcp"]
+forbidden_modules = [
+  "recromancer.llm", "recromancer.embed", "recromancer.retrieval", "recromancer.db",
+  "recromancer.ingest", "recromancer.bootstrap", "recromancer.grounding",
+  "recromancer.config", "recromancer.observability",
+  "psycopg", "psycopg_pool", "httpx",
+]
+allow_indirect_imports = true
+
+# C6: only bootstrap wires adapters.
+[[tool.importlinter.contracts]]
+name = "only-bootstrap-wires-adapters"
+type = "forbidden"
+source_modules = [
+  "recromancer.grounding", "recromancer.ingest", "recromancer.service",
+  "recromancer.api", "recromancer.mcp", "recromancer.config",
+  "recromancer.observability",
+]
+forbidden_modules = [
+  "recromancer.llm", "recromancer.embed", "recromancer.retrieval", "recromancer.db",
+]
+
+# C7: adapters never import each other.
+[[tool.importlinter.contracts]]
+name = "adapters-are-independent"
+type = "independence"
+modules = [
+  "recromancer.llm", "recromancer.embed", "recromancer.retrieval", "recromancer.db",
+]
+
+# C8: layer order, top to bottom.
+[[tool.importlinter.contracts]]
+name = "layer-order"
+type = "layers"
+containers = ["recromancer"]
+layers = [
+  "bootstrap",
+  "api | mcp",
+  "service",
+  "llm | embed | retrieval | db",
+  "grounding | ingest",
+  "domain",
+]

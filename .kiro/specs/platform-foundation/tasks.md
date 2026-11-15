@@ -28,7 +28,7 @@ Conventions that apply to every task:
 
 ## Tasks
 
-- [ ] 1. Scaffold the package and enforce module boundaries
+- [x] 1. Scaffold the package and enforce module boundaries
   - [x] 1.1 Create the backend scaffold and prove the toolchain on it
     - Create `backend/pyproject.toml`: hatchling build backend; `requires-python = ">=3.11"`; wheel target `packages = ["src/recromancer"]`; runtime dependencies `fastapi`, `pydantic`, `pydantic-settings`, `httpx`, `structlog`, `psycopg[binary]`, `psycopg-pool`, plus `anyio` and `uvicorn` (design risk 8); `[dev]` extra with `pytest`, `pytest-cov`, `hypothesis`, `anyio`, `ruff`, `mypy`, `import-linter`. Choose lower bounds from the package index (for example `pip index versions <name>` or the resolved `pip install` output), not from memory.
     - Configure ruff (`line-length = 88`, `lint.select = ["E","F","I","UP","B"]`), mypy (`strict = true`, `python_version = "3.11"`, `files = ["src", "tests"]`, `mypy_path = ["../scripts"]`, no `exclude` for tests), pytest (`testpaths = ["tests"]`, `pythonpath = ["../scripts"]`, `addopts = "--cov=recromancer --cov-report=term-missing"`) and `[tool.coverage.report] fail_under = 85`. Declare no `pytest-asyncio`, no `anyio[trio]` and no `asyncio_mode`.
@@ -40,7 +40,7 @@ Conventions that apply to every task:
     - Check the installed `import-linter` version (`pip show import-linter`) and its documentation for the contract option names the design states from memory: `type = "forbidden"`, `"independence"` and `"layers"`; `source_modules`, `forbidden_modules`, `allow_indirect_imports`, `include_external_packages`, `containers`, `layers` with the `|` sibling syntax, and how contracts treat modules that do not exist yet. Write the findings as a short comment block at the top of the `[tool.importlinter]` section.
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 1.10, 1.11, 1.12, 1.13, 2.7, 2.8_
 
-  - [ ] 1.2 Declare import-linter contracts C1 to C8
+  - [x] 1.2 Declare import-linter contracts C1 to C8
     - In `backend/pyproject.toml` set `root_package = "recromancer"` and `include_external_packages = true`, and add contracts C1 `domain-is-pure`, C2 `pure-logic-imports-domain-only`, C3 `config-is-narrow`, C4 `service-uses-ports-only`, C5 `delivery-skips-adapters` (`allow_indirect_imports = true`), C6 `only-bootstrap-wires-adapters`, C7 `adapters-are-independent` and C8 `layer-order` exactly as tabulated in the design, listing every module explicitly, using the option names confirmed in task 1.1.
     - If `import-linter` rejects contracts that name modules that do not exist yet (`config`, `observability`, `bootstrap`), create docstring-only stub modules `config.py`, `observability.py` and `bootstrap.py` in `backend/src/recromancer/`; later tasks replace the stubs. Otherwise create nothing extra.
     - Write `backend/tests/unit/test_import_contracts.py`: parse `pyproject.toml` and assert that C1 to C8 exist by name, C5 sets `allow_indirect_imports = true`, C2 covers `grounding` and `ingest`, C6 lists `llm`, `embed`, `retrieval` and `db` as forbidden, C7 independence covers the four adapters, and C8 layers equal the documented order. Add a negative check that runs `lint-imports` through `subprocess` (no shell) against a temporary copy or by asserting exit code 0 on the real tree, whichever the installed version supports reliably.
