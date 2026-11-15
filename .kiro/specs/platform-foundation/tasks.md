@@ -29,7 +29,7 @@ Conventions that apply to every task:
 ## Tasks
 
 - [ ] 1. Scaffold the package and enforce module boundaries
-  - [ ] 1.1 Create the backend scaffold and prove the toolchain on it
+  - [x] 1.1 Create the backend scaffold and prove the toolchain on it
     - Create `backend/pyproject.toml`: hatchling build backend; `requires-python = ">=3.11"`; wheel target `packages = ["src/recromancer"]`; runtime dependencies `fastapi`, `pydantic`, `pydantic-settings`, `httpx`, `structlog`, `psycopg[binary]`, `psycopg-pool`, plus `anyio` and `uvicorn` (design risk 8); `[dev]` extra with `pytest`, `pytest-cov`, `hypothesis`, `anyio`, `ruff`, `mypy`, `import-linter`. Choose lower bounds from the package index (for example `pip index versions <name>` or the resolved `pip install` output), not from memory.
     - Configure ruff (`line-length = 88`, `lint.select = ["E","F","I","UP","B"]`), mypy (`strict = true`, `python_version = "3.11"`, `files = ["src", "tests"]`, `mypy_path = ["../scripts"]`, no `exclude` for tests), pytest (`testpaths = ["tests"]`, `pythonpath = ["../scripts"]`, `addopts = "--cov=recromancer --cov-report=term-missing"`) and `[tool.coverage.report] fail_under = 85`. Declare no `pytest-asyncio`, no `anyio[trio]` and no `asyncio_mode`.
     - Create `backend/src/recromancer/__init__.py`, `py.typed`, and the ten sub-packages `domain`, `grounding`, `ingest`, `retrieval`, `llm`, `embed`, `db`, `service`, `api`, `mcp`, each with only an `__init__.py` (optional docstring).
@@ -78,7 +78,8 @@ Conventions that apply to every task:
   - [ ] 3.2 Implement `load_dotenv` and `read_environment` in `config.py`
     - `read_environment()` returns a copy of the process environment (the only legal reader besides `from_env`).
     - `load_dotenv(*, environ=None, start=None) -> Path | None`: read the production flag from the real or injected environment only; any value other than absent or `""`, `0`, `false`, `no`, `off` (case-insensitive) counts as production and returns `None` without opening any file; otherwise walk up from `start` to the first directory containing `.env.example`, read `.env` with `encoding="utf-8-sig"`, strip a trailing `\r` per line, skip blank and `#` lines, split on the first `=`, strip whitespace, remove one pair of matching quotes (keeping an inner `#`), use `setdefault` so existing variables win, and ignore `RECROMANCER_PRODUCTION` in the file.
-    - _Requirements: 3.13, 3.14, 3.15, 3.16_
+    - After implementing `read_environment()`, change `backend/tests/conftest.py` to select the Hypothesis profile with `config.read_environment().get("HYPOTHESIS_PROFILE", "default")` and remove its `os` import, so no file other than `config.py` touches `os.environ` or `os.getenv`. Then confirm that `cd backend; pytest` still measures coverage for `recromancer` (no "module-not-imported" or "no data" warnings in the output, and the floor holds) and that the unit tests pass. Reason: `conftest.py` is imported by pytest before the coverage plugin and before test modules; importing `recromancer.config` there must not stop coverage from tracking the package, so check the warnings explicitly.
+    - _Requirements: 3.2, 3.13, 3.14, 3.15, 3.16_
 
   - [ ] 3.3 Write unit tests `test_config.py`
     - Create `backend/tests/unit/test_config.py`: defaults, prefix handling, case-insensitive names, unknown variable named in the error, invalid field named with its expected type and without its value, `hide_input_in_errors`, production rules (admin token missing, 31 characters, 32 characters, the placeholder; not required when `demo_mode` is true; `database_url` unset or equal to the default in production), several simultaneous violations in one `ConfigError` naming all fields, `production=True` with `demo_mode=True` is valid, `log_safe_summary` content, `secret_values` length filter, and that error text contains no value or length of `admin_token`. Also cover empty and whitespace-only values for `admin_token` and `anthropic_api_key`, which both yield `None`, and that an empty `RECROMANCER_ADMIN_TOKEN` with `production` true and `demo_mode` false fails the `admin_token` rule.
@@ -90,6 +91,7 @@ Conventions that apply to every task:
 
   - [ ] 3.5 Write the `os.environ` AST guard test
     - Create `backend/tests/unit/test_no_environ_reads.py`: walk every `*.py` under the repo root (excluding `.venv`, `.git`, `node_modules`, `.hypothesis`, `.mypy_cache`, `.ruff_cache`, `.pytest_cache`, `build`, `dist`, `*.egg-info` and similar), skip `backend/src/recromancer/config.py`, parse with `ast`, and fail on any `ast.Attribute` with `value=ast.Name(id="os")` and `attr in {"environ", "getenv"}`; also flag `ImportFrom(module="os")` that imports `environ` or `getenv`. Add a self-test that the guard flags a synthetic `os.environ` and `os.getenv` snippet and ignores the string literal `"os.environ"`, a comment and a docstring. Read files as UTF-8 with BOM tolerance. Confirm the guard passes on the current tree.
+    - No file is exempted from the guard except `backend/src/recromancer/config.py`; in particular `backend/tests/conftest.py` is scanned. Confirm the guard passes on the tree including `conftest.py`.
     - _Requirements: 3.2, 3.17_
 
 - [ ] 4. Checkpoint - Foundation core

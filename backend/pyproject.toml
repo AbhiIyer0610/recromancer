@@ -1,0 +1,89 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "recromancer"
+version = "0.1.0"
+description = "Ask questions of an engineer who has left; answers come only from their recorded work."
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = [
+  "fastapi>=0.163",
+  "pydantic>=2.14",
+  "pydantic-settings>=2.16",
+  "httpx>=0.28",
+  "structlog>=26.1",
+  "psycopg[binary]>=3.3",
+  "psycopg-pool>=3.3",
+  "anyio>=4.16",
+  "uvicorn>=0.54",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=9.2",
+  "pytest-cov>=7.1",
+  "hypothesis>=6.170",
+  "anyio>=4.16",
+  "ruff>=0.17",
+  "mypy>=2.4",
+  "import-linter>=2.16",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/recromancer"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+strict = true
+python_version = "3.11"
+files = ["src", "tests"]
+mypy_path = ["../scripts"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["../scripts"]
+addopts = "--cov=recromancer --cov-report=term-missing"
+
+[tool.coverage.report]
+fail_under = 85
+
+# import-linter findings (task 1.1; import-linter 2.16, grimp 3.20; each item was
+# verified by running lint-imports against throwaway configs on this scaffold):
+# - lint-imports finds `recromancer` through the editable install; no PYTHONPATH needed.
+# - A [tool.importlinter] block with root_package only and zero contracts is rejected:
+#   "No contracts found in the configuration." (exit 1). At least one contract is
+#   required, so a trivial placeholder contract is kept below until task 1.2.
+# - Contract types and options accepted as designed: type = "forbidden" (source_modules,
+#   forbidden_modules, allow_indirect_imports), type = "independence" (modules), and
+#   type = "layers" (containers, layers). Unknown options are rejected
+#   ("bogus: Unrecognized option.").
+# - include_external_packages = true is a root-level option (beside root_package) and is
+#   accepted; forbidding external names such as pydantic, psycopg_pool or anyio then works.
+# - Layer siblings use "a | b" inside one layers entry; accepted.
+# - Modules that do not exist yet are errors, not skipped:
+#   * forbidden: "Module 'recromancer.config' does not exist." (hits both source_modules
+#     and forbidden_modules; external names such as pydantic are exempt).
+#   * layers: "Missing layer in container 'recromancer': module recromancer.bootstrap
+#     does not exist."
+#   * A layer wrapped in parentheses, e.g. "(bootstrap)", is optional and is accepted when
+#     the module is absent. independence modules were only tested with existing modules.
+#   Consequence for task 1.2: create docstring-only stubs for config, observability and
+#   bootstrap before declaring C1-C8, or wrap absent layers in parentheses.
+[tool.importlinter]
+root_package = "recromancer"
+
+[[tool.importlinter.contracts]]
+# Trivial placeholder contract so lint-imports has something to run; task 1.2
+# replaces it with contracts C1 to C8.
+name = "domain-is-pure-placeholder"
+type = "forbidden"
+source_modules = ["recromancer.domain"]
+forbidden_modules = ["recromancer.api"]

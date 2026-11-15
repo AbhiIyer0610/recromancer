@@ -43,3 +43,5 @@ playwright-report/
 test-results/
 .pgdata/
 Thumbs.db
+
+.import_linter_cache/
