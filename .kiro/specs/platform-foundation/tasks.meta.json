@@ -31,6 +31,66 @@
         "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
         "timestamp": 1794757784359
       }
+    ],
+    "2.3 Implement `domain/secrets.py`": [
+      {
+        "executionId": "bbcd2715-b430-4146-97fa-c82b1a92ee03",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1794852868875
+      },
+      {
+        "executionId": "bbcd2715-b430-4146-97fa-c82b1a92ee03",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1794853045507
+      },
+      {
+        "executionId": "bbcd2715-b430-4146-97fa-c82b1a92ee03",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1794853109694
+      }
+    ],
+    "2.1 Implement `domain/errors.py`": [
+      {
+        "executionId": "bbcd2715-b430-4146-97fa-c82b1a92ee03",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1794852870685
+      },
+      {
+        "executionId": "bbcd2715-b430-4146-97fa-c82b1a92ee03",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1794852997504
+      }
+    ],
+    "2.2 Write unit tests for the error taxonomy": [
+      {
+        "executionId": "bbcd2715-b430-4146-97fa-c82b1a92ee03",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1794852997560
+      },
+      {
+        "executionId": "bbcd2715-b430-4146-97fa-c82b1a92ee03",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1794853045409
+      }
+    ],
+    "2.4 Write unit tests `test_redaction_keys.py`": [
+      {
+        "executionId": "bbcd2715-b430-4146-97fa-c82b1a92ee03",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1794853109764
+      },
+      {
+        "executionId": "bbcd2715-b430-4146-97fa-c82b1a92ee03",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1794853181427
+      }
+    ],
+    "2. Implement the domain error taxonomy and log-key rule": [
+      {
+        "executionId": "bbcd2715-b430-4146-97fa-c82b1a92ee03",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1794853181485
+      }
     ]
   }
 }

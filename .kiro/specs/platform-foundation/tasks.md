@@ -47,22 +47,22 @@ Conventions that apply to every task:
     - Verify the contracts catch a violation: temporarily add `import recromancer.service` to `domain/__init__.py`, confirm `lint-imports` fails and names the import, then remove it. Re-run the full toolchain.
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8_
 
-- [ ] 2. Implement the domain error taxonomy and log-key rule
-  - [ ] 2.1 Implement `domain/errors.py`
+- [x] 2. Implement the domain error taxonomy and log-key rule
+  - [x] 2.1 Implement `domain/errors.py`
     - Define `ErrorCode(StrEnum)` with `VALIDATION_ERROR`, `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `CONFIG_INVALID`, `MIGRATION_FAILED`, `DEPENDENCY_UNAVAILABLE`, `INTERNAL_ERROR`, values equal to names.
     - Define `RecromancerError(Exception)` with `MAX_MESSAGE_LENGTH = 500`, `code` and `message` attributes, and a constructor that raises `ValueError` (text states only the length) when `len(message) > 500`.
     - Use stdlib only; `lint-imports` must still pass.
     - _Requirements: 4.1, 4.2, 4.3, 2.1_
 
-  - [ ] 2.2 Write unit tests for the error taxonomy
+  - [x] 2.2 Write unit tests for the error taxonomy
     - Create `backend/tests/unit/test_errors.py`: members present, values equal names, 500-character message accepted, 501-character message rejected with a `ValueError` that does not contain the message text, `code` and `message` attributes preserved.
     - _Requirements: 4.1, 4.2, 4.3_
 
-  - [ ] 2.3 Implement `domain/secrets.py`
+  - [x] 2.3 Implement `domain/secrets.py`
     - Implement `SECRET_SUBSTRINGS`, `SECRET_SEGMENTS`, `COUNTER_SUFFIX`, `name_segments` and `is_sensitive_key` exactly as specified in the design (allowlist on last segment `tokens` first, then substring markers, then whole-segment markers). Expose `is_sensitive_key` as the single public function.
     - _Requirements: 5.7, 2.1_
 
-  - [ ] 2.4 Write unit tests `test_redaction_keys.py`
+  - [x] 2.4 Write unit tests `test_redaction_keys.py`
     - Create `backend/tests/unit/test_redaction_keys.py`: redacted for `apikey`, `apiKey`, `API_KEY`, `api_key`, `accesskey`, `privatekey`, `signingkey`, `authkey`, `accesstoken`, `db_password`, `admin_token`, `authorization`, `session_cookie`; not redacted for `monkey`, `keyboard`, `input_tokens`, `output_tokens`, `max_tokens`; hyphen and upper-case variants behave the same as their snake_case forms.
     - _Requirements: 5.7_
 
