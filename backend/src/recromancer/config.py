@@ -244,6 +244,9 @@ _PRODUCTION_VAR = ENV_PREFIX + "PRODUCTION"
 _NOT_PRODUCTION = frozenset({"", "0", "false", "no", "off"})
 _DOTENV_MARKER = ".env.example"
 _DOTENV_NAME = ".env"
+DOTENV_ENCODING_ERROR = (
+    ".env must be UTF-8 text. Re-save it as UTF-8 (PowerShell `>` writes UTF-16)."
+)
 
 
 def read_environment() -> dict[str, str]:
@@ -311,7 +314,12 @@ def load_dotenv(
     if not env_file.is_file():
         return None
 
-    for key, value in _parse_dotenv(env_file.read_text(encoding="utf-8-sig")):
+    try:
+        text = env_file.read_text(encoding="utf-8-sig")
+    except UnicodeDecodeError:
+        raise ConfigError(DOTENV_ENCODING_ERROR) from None
+
+    for key, value in _parse_dotenv(text):
         folded = key.lower()
         if folded == _PRODUCTION_VAR.lower() or folded in existing:
             continue

@@ -112,6 +112,7 @@ logs or error output.
 16. THE application entrypoint and `scripts/doctor.py` SHALL obtain configuration only through the Env_Loader and `Settings.from_env()`.
 17. THE Scaffold SHALL include a unit test under `backend/tests/unit/` that parses every Python file in the repository other than `backend/src/recromancer/config.py` with the `ast` module and fails IF any `ast.Attribute` node whose value is the name `os` and whose attribute is `environ` or `getenv` is found.
 18. WHEN the value of an optional secret field (`admin_token` or `anthropic_api_key`) is an empty or whitespace-only string, THE Settings SHALL treat the field as unset (`None`); WHILE `production` is `True` and `demo_mode` is `False`, an empty or whitespace-only `admin_token` SHALL therefore count as missing under the `admin_token` rule of criterion 3.10.
+19. IF the `.env` file read by the Env_Loader cannot be decoded as UTF-8 (for example a UTF-16 file written by PowerShell `>`), THEN THE Env_Loader SHALL raise a ConfigError with the fixed message ".env must be UTF-8 text. Re-save it as UTF-8 (PowerShell `>` writes UTF-16)." and the message SHALL NOT include file content, byte values or decoder details, and no variable from the file SHALL be loaded into the environment.
 
 ---
 

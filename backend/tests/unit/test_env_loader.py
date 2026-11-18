@@ -9,7 +9,12 @@ from typing import Any
 
 import pytest
 
-from recromancer.config import load_dotenv, read_environment
+from recromancer.config import (
+    DOTENV_ENCODING_ERROR,
+    ConfigError,
+    load_dotenv,
+    read_environment,
+)
 
 KEY = "RECROMANCER_LOG_LEVEL"
 
@@ -266,6 +271,74 @@ def test_return_value_is_path_of_env_file_read(tmp_path: Path) -> None:
     result = _load(root, {})
     assert result == root.resolve() / ".env"
     assert result is not None and result.is_file()
+
+
+# --- R3.19: decode failure ----------------------------------------------------
+
+FIXED_MESSAGE = (
+    ".env must be UTF-8 text. Re-save it as UTF-8 (PowerShell `>` writes UTF-16)."
+)
+_FORBIDDEN_FRAGMENTS = (
+    "codec",
+    "decode",
+    "0xff",
+    "0xfe",
+    "position",
+    "invalid start byte",
+    "RECROMANCER_LOG_LEVEL",
+    "DEBUG",
+)
+_BAD_FILES = {
+    "utf16": f"{KEY}=DEBUG\n".encode("utf-16"),
+    "invalid_utf8": b"\xff\xfe\x00A=1",
+}
+
+
+def _assert_fixed_error(err: ConfigError) -> None:
+    assert err.message == FIXED_MESSAGE
+    assert err.message == DOTENV_ENCODING_ERROR
+    for text in (str(err), repr(err)):
+        for fragment in _FORBIDDEN_FRAGMENTS:
+            assert fragment not in text
+    assert err.__cause__ is None
+    assert err.__suppress_context__ is True
+
+
+@pytest.mark.parametrize("name", sorted(_BAD_FILES))
+@pytest.mark.parametrize("initial", [{}, {"UNRELATED": "x", "other": "y"}])
+def test_undecodable_file_raises_fixed_error_and_leaves_environ_unchanged(
+    tmp_path: Path, name: str, initial: dict[str, str]
+) -> None:
+    root = _repo(tmp_path, _BAD_FILES[name])
+    env = dict(initial)
+    with pytest.raises(ConfigError) as info:
+        _load(root, env)
+    _assert_fixed_error(info.value)
+    assert env == initial
+
+
+def test_utf16_file_starts_with_bom() -> None:
+    assert _BAD_FILES["utf16"][:2] in (b"\xff\xfe", b"\xfe\xff")
+
+
+def test_valid_file_loads_after_a_failing_one(tmp_path: Path) -> None:
+    bad = _repo(tmp_path / "bad", _BAD_FILES["utf16"])
+    good = _repo(tmp_path / "good", f"{KEY}=DEBUG\n")
+    env: dict[str, str] = {}
+    with pytest.raises(ConfigError):
+        _load(bad, env)
+    assert env == {}
+    assert _load(good, env) == good / ".env"
+    assert env == {KEY: "DEBUG"}
+
+
+def test_bad_byte_midway_does_not_partially_load(tmp_path: Path) -> None:
+    root = _repo(tmp_path, b"A=1\n\xffB=2\n")
+    env = {"UNRELATED": "x"}
+    with pytest.raises(ConfigError) as info:
+        _load(root, env)
+    _assert_fixed_error(info.value)
+    assert env == {"UNRELATED": "x"}
 
 
 # --- read_environment ---------------------------------------------------------

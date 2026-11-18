@@ -505,6 +505,12 @@ def load_dotenv(*, environ: MutableMapping[str, str] | None = None,
      There is no interpolation and no `export` prefix.
   Windows editors commonly save `.env` files with a BOM or CRLF line endings, which is why both are
   handled.
+- Decode failure (R3.19): the file is decoded as a whole before any variable is set, so a decode
+  failure leaves the target mapping unchanged. A `UnicodeDecodeError` is caught around the read and
+  replaced with a `ConfigError` carrying the fixed message ".env must be UTF-8 text. Re-save it as
+  UTF-8 (PowerShell `>` writes UTF-16)." The new exception is raised `from None`, so the decoder
+  message (which contains byte offsets and values) is not chained. UTF-16 with a BOM fails because
+  its first byte `0xFF` is not valid UTF-8.
 - It uses `setdefault`, so variables already set are never overridden (R3.13).
 - It ignores `RECROMANCER_PRODUCTION` if it appears in the file, so a file can never switch the
   process into or out of production mode.
@@ -1189,7 +1195,7 @@ Notes:
 | `test_scaffold.py` | R1: parses `pyproject.toml` with `tomllib`; checks directories, `py.typed`, dependencies, tool settings, no `asyncio_mode` or `pytest-asyncio` anywhere |
 | `test_import_contracts.py` | R2: contracts C1 to C8 exist, C5 sets `allow_indirect_imports = true`, C2 covers `grounding` and `ingest`, C8 layers match the documented order; `lint-imports` itself runs in CI |
 | `test_config.py` | R3: defaults, prefix, unknown variables, validation messages, production rules (including R3.10: admin token missing, 31 characters, 32 characters, the placeholder; not required when `demo_mode` is true) and combined errors, `production` with `demo_mode`, `log_safe_summary`; R3.18: empty and whitespace-only values for `admin_token` and `anthropic_api_key` yield `None`, an empty `RECROMANCER_ADMIN_TOKEN` fails the `admin_token` rule in production with `demo_mode` false, and an empty `database_url` is still invalid |
-| `test_env_loader.py` | R3.13 to 3.15, using `tmp_path` and an injected `environ` (no real environment): dev loads without overriding variables that are already set; production never opens the file; `RECROMANCER_PRODUCTION` in the file is ignored; R3.14: a BOM before the first key parses as `RECROMANCER_...` and not `\ufeffRECROMANCER_...`; CRLF line endings leave no trailing `\r` on values and parse identically to LF; single and double quoted values are stripped and an inner `#` is preserved; comment lines and blank lines are ignored |
+| `test_env_loader.py` | R3.13 to 3.15, using `tmp_path` and an injected `environ` (no real environment): dev loads without overriding variables that are already set; production never opens the file; `RECROMANCER_PRODUCTION` in the file is ignored; R3.14: a BOM before the first key parses as `RECROMANCER_...` and not `\ufeffRECROMANCER_...`; CRLF line endings leave no trailing `\r` on values and parse identically to LF; single and double quoted values are stripped and an inner `#` is preserved; comment lines and blank lines are ignored; R3.19: a UTF-16 file with BOM and invalid UTF-8 bytes both raise `ConfigError` with the fixed message and leave `environ` unchanged |
 | `test_no_environ_reads.py` | R3.17 AST guard over the whole repo, plus a self-test that the guard flags a synthetic `os.environ` and ignores a string literal |
 | `test_errors.py` | R4.1 to 4.3: 500 and 501 character boundary |
 | `test_api_errors.py` | R4.5 to 4.10 and R5.6: all error paths (404, 405, another HTTP status such as 401 or 418 keeping its status with `INTERNAL_ERROR`, catch-all 500), header on every response, generic message, traceback logging contains no body, query string or sensitive header |
