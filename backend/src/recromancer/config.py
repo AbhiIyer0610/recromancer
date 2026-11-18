@@ -7,7 +7,8 @@ Imports are limited to ``recromancer.domain``, the standard library, ``pydantic`
 import os
 import types
 import typing
-from collections.abc import Mapping
+from collections.abc import Mapping, MutableMapping
+from pathlib import Path
 from typing import Any, ClassVar, Literal
 from urllib.parse import urlsplit
 
@@ -128,7 +129,7 @@ class Settings(BaseSettings):
         the first in sorted order wins.
         """
         source: Mapping[str, str] = (
-            dict(os.environ) if environ is None else dict(environ)
+            read_environment() if environ is None else dict(environ)
         )
         upper_to_value: dict[str, str] = {}
         for key in sorted(source):
@@ -237,3 +238,83 @@ def _format_error(unknown: list[str], invalid: list[str]) -> str:
     if invalid:
         parts.append("Invalid fields: " + ", ".join(invalid) + ".")
     return _truncate(" ".join(parts))
+
+
+_PRODUCTION_VAR = ENV_PREFIX + "PRODUCTION"
+_NOT_PRODUCTION = frozenset({"", "0", "false", "no", "off"})
+_DOTENV_MARKER = ".env.example"
+_DOTENV_NAME = ".env"
+
+
+def read_environment() -> dict[str, str]:
+    """Return a copy of the process environment."""
+    return dict(os.environ)
+
+
+def _find_repo_root(start: Path) -> Path | None:
+    """First directory from ``start`` upward that contains ``.env.example``."""
+    for directory in (start, *start.parents):
+        if (directory / _DOTENV_MARKER).is_file():
+            return directory
+    return None
+
+
+def _unquote(value: str) -> str:
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
+        return value[1:-1]
+    return value
+
+
+def _parse_dotenv(text: str) -> list[tuple[str, str]]:
+    pairs: list[tuple[str, str]] = []
+    for raw in text.split("\n"):
+        line = raw.removesuffix("\r").strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key = key.strip()
+        if key:
+            pairs.append((key, _unquote(value.strip())))
+    return pairs
+
+
+def load_dotenv(
+    *,
+    environ: MutableMapping[str, str] | None = None,
+    start: Path | None = None,
+) -> Path | None:
+    """Load the repo-root ``.env`` into ``environ`` (default: the process environment).
+
+    Returns the path of the file that was read, or ``None`` when nothing was loaded:
+    production mode (no file is opened), no ``.env.example`` in ``start`` or any parent,
+    or no ``.env`` file next to it. These cases are not errors.
+
+    Existing variables always win. Names are compared case-insensitively (Windows
+    semantics) against a lower-cased snapshot of the target's names, so an existing
+    ``recromancer_log_level`` blocks ``RECROMANCER_LOG_LEVEL`` from the file. The
+    production flag is read only from the target and is ignored if present in the file.
+    """
+    target: MutableMapping[str, str] = os.environ if environ is None else environ
+    existing = {name.lower() for name in target}
+
+    flag = next(
+        (target[name] for name in target if name.lower() == _PRODUCTION_VAR.lower()),
+        "",
+    )
+    if flag.strip().lower() not in _NOT_PRODUCTION:
+        return None
+
+    root = _find_repo_root((start if start is not None else Path.cwd()).resolve())
+    if root is None:
+        return None
+    env_file = root / _DOTENV_NAME
+    if not env_file.is_file():
+        return None
+
+    for key, value in _parse_dotenv(env_file.read_text(encoding="utf-8-sig")):
+        folded = key.lower()
+        if folded == _PRODUCTION_VAR.lower() or folded in existing:
+            continue
+        target.setdefault(key, value)
+        existing.add(folded)
+    return env_file

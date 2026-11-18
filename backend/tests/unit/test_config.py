@@ -9,6 +9,7 @@ from collections.abc import Mapping
 import pytest
 from pydantic import SecretStr, ValidationError
 
+from recromancer import config
 from recromancer.config import (
     ADMIN_TOKEN_PLACEHOLDER,
     DEFAULT_DATABASE_URL,
@@ -316,3 +317,13 @@ def test_settings_are_frozen() -> None:
     with pytest.raises(ValidationError):
         setattr(s, "demo_mode", False)  # noqa: B010
     assert isinstance(s.database_url, SecretStr)
+
+
+def test_placeholder_rejected_independently_of_length_rule(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(config, "MIN_ADMIN_TOKEN_LENGTH", 10)
+    assert len(ADMIN_TOKEN_PLACEHOLDER) >= config.MIN_ADMIN_TOKEN_LENGTH
+    err = _error(_prod(RECROMANCER_ADMIN_TOKEN=ADMIN_TOKEN_PLACEHOLDER))
+    assert "RECROMANCER_ADMIN_TOKEN" in err.message
+    assert ADMIN_TOKEN_PLACEHOLDER not in err.message

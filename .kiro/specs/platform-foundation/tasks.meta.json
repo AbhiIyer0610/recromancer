@@ -115,6 +115,49 @@
         "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
         "timestamp": 1795015958722
       }
+    ],
+    "3.2 Implement `load_dotenv` and `read_environment` in `config.py`": [
+      {
+        "executionId": "45480b2d-34f5-40af-a894-6b1d163522f4",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795023277315
+      },
+      {
+        "executionId": "45480b2d-34f5-40af-a894-6b1d163522f4",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795023546288
+      }
+    ],
+    "3.4 Write unit tests `test_env_loader.py`": [
+      {
+        "executionId": "45480b2d-34f5-40af-a894-6b1d163522f4",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795023546347
+      },
+      {
+        "executionId": "45480b2d-34f5-40af-a894-6b1d163522f4",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795023773167
+      }
+    ],
+    "3.5 Write the `os.environ` AST guard test": [
+      {
+        "executionId": "45480b2d-34f5-40af-a894-6b1d163522f4",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795023773220
+      },
+      {
+        "executionId": "45480b2d-34f5-40af-a894-6b1d163522f4",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795024038474
+      }
+    ],
+    "3. Implement typed configuration and the Env_Loader": [
+      {
+        "executionId": "45480b2d-34f5-40af-a894-6b1d163522f4",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795024038552
+      }
     ]
   }
 }
