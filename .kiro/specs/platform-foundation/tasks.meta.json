@@ -91,6 +91,30 @@
         "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
         "timestamp": 1794853181485
       }
+    ],
+    "3.1 Implement `Settings`, `ConfigError` and `from_env` in `config.py`": [
+      {
+        "executionId": "a4db8bdb-642a-4cef-817a-4340de41a7da",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795015547848
+      },
+      {
+        "executionId": "a4db8bdb-642a-4cef-817a-4340de41a7da",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795015846189
+      }
+    ],
+    "3.3 Write unit tests `test_config.py`": [
+      {
+        "executionId": "a4db8bdb-642a-4cef-817a-4340de41a7da",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795015846252
+      },
+      {
+        "executionId": "a4db8bdb-642a-4cef-817a-4340de41a7da",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795015958722
+      }
     ]
   }
 }
