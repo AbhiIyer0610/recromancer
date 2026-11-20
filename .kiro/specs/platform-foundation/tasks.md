@@ -122,7 +122,7 @@ Conventions that apply to every task:
     - **Property 1: Secret values never appear in observable output**
     - **Validates: Requirements 3.5, 3.6, 3.11, 5.7, 10.2**
 
-- [ ] 6. Implement the API layer
+- [x] 6. Implement the API layer
   - [x] 6.1 Implement `api/request_id.py`
     - `resolve_request_id(header, new_id)` using `re.fullmatch` on `[A-Za-z0-9._-]{8,64}` (not `^...$`), returning the header unchanged when it matches and `new_id()` otherwise.
     - _Requirements: 5.3, 5.4_
@@ -151,18 +151,18 @@ Conventions that apply to every task:
     - `create_app(*, readiness, clock, new_id, lifespan=None, demo_mode=True, production=False, readyz_timeout_s=5.0)`. Never read configuration or import an adapter. When `production` is true construct `FastAPI(docs_url=None, redoc_url=None, openapi_url=None)`, otherwise use the defaults. Register the exception handlers, add `RequestContextMiddleware`, include the health router, and expose `demo_mode` on `app.state`. Ensure the middleware order matches the design (ServerErrorMiddleware outermost, then ours, then ExceptionMiddleware, then the router).
     - _Requirements: 4.5, 5.3, 5.4, 5.5, 5.6, 5.10, 5.11, 5.12, 5.13, 5.14_
 
-  - [ ] 6.7 Write API unit tests
+  - [x] 6.7 Write API unit tests
     - Create `backend/tests/unit/test_api_errors.py`: using `TestClient(app, raise_server_exceptions=False)` with a fake probe, fake clock and counter id generator, test every error path (`RecromancerError` for each code, 422 validation, 404, 405, an HTTP status such as 401 or 418 that keeps its status with `INTERNAL_ERROR`, catch-all 500), body shape `{"code","message","request_id"}`, `X-Request-Id` on every response including errors, a valid inbound id echoed and an invalid one replaced, exception detail never in the body, one access log line per request, and traceback logging that contains no body, query string or header named like `authorization`, `token`, `secret` or `cookie`.
     - Create `backend/tests/unit/test_health.py`: `/healthz` never calls the probe; `/readyz` ready, not ready, raising and hanging (use `readyz_timeout_s=0.05` and `@pytest.mark.anyio` or `TestClient`) with the exact bodies and statuses.
     - Create `backend/tests/unit/test_docs_disabled_in_production.py`: with `production=True`, `GET /docs`, `/redoc` and `/openapi.json` return 404 with code `NOT_FOUND` and the standard body; with `production=False` all three return 200.
     - _Requirements: 4.5, 4.6, 4.7, 4.8, 4.9, 4.10, 5.3, 5.4, 5.5, 5.6, 5.10, 5.11, 5.12, 5.13_
 
-  - [ ] 6.8 Write Property 2 for the error-status mapping
+  - [x] 6.8 Write Property 2 for the error-status mapping
     - Add `assert_mapping_total(mapping, codes)` to `invariants.py`. Create `backend/tests/property/test_error_mapping_property.py::test_mapping_is_total` using `st.sampled_from(list(ErrorCode))` plus an explicit check that the key set of `ERROR_HTTP_STATUS` equals the set of `ErrorCode` members, and that each status is an integer in the 400 to 599 range and a defined HTTP status.
     - **Property 2: The error-to-status mapping is total and valid**
     - **Validates: Requirements 4.4, 10.3**
 
-- [ ] 7. Checkpoint - API layer
+- [x] 7. Checkpoint - API layer
   - Ensure all tests pass, ask the user if questions arise. Run `cd backend; ruff check .; ruff format --check .; mypy; lint-imports; pytest` and confirm the coverage floor holds.
 
 - [ ] 8. Implement the local database environment, migration system and Postgres adapters

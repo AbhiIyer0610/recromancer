@@ -8,7 +8,11 @@ from __future__ import annotations
 
 import json
 import uuid
+from collections.abc import Iterable, Mapping
+from http import HTTPStatus
 from urllib.parse import quote
+
+from recromancer.domain.errors import ErrorCode
 
 
 def secret_forms(secret: str) -> dict[str, str]:
@@ -71,3 +75,37 @@ def assert_request_id_valid(header: str | None, result: str, generated: str) -> 
             raise AssertionError("generated id is not a canonical UUID4 string")
     if not is_valid_request_id(result):
         raise AssertionError(f"result (len {len(result)}) is not a valid request id")
+
+
+def _member_name(member: object) -> str:
+    if isinstance(member, ErrorCode):
+        return member.name
+    return f"<{type(member).__name__}>"
+
+
+def assert_mapping_total(
+    mapping: Mapping[ErrorCode, int], codes: Iterable[ErrorCode]
+) -> None:
+    """Assert `mapping` covers exactly `codes` and every status is valid.
+
+    A valid status is an int (not a bool) in 400..599 that `http.HTTPStatus`
+    defines. Messages name the code and the status number only.
+    """
+    expected = set(codes)
+    actual = set(mapping)
+    missing = sorted(_member_name(c) for c in expected - actual)
+    extra = sorted(_member_name(c) for c in actual - expected)
+    if missing or extra:
+        raise AssertionError(f"key set differs: missing {missing}, extra {extra}")
+    for code, status in mapping.items():
+        name = _member_name(code)
+        if isinstance(status, bool) or not isinstance(status, int):
+            raise AssertionError(f"{name}: status is not an int")
+        if not 400 <= status <= 599:
+            raise AssertionError(f"{name}: status {status} outside 400..599")
+        try:
+            HTTPStatus(status)
+        except ValueError:
+            raise AssertionError(
+                f"{name}: status {status} is not a defined HTTP status"
+            ) from None

@@ -29,6 +29,7 @@ dev = [
   "ruff>=0.17",
   "mypy>=2.4",
   "import-linter>=2.16",
+  "httpx2>=2.16.2",
 ]
 
 [tool.hatch.build.targets.wheel]

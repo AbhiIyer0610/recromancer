@@ -332,6 +332,49 @@
         "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
         "timestamp": 1795194759895
       }
+    ],
+    "6.7 Write API unit tests": [
+      {
+        "executionId": "d9582bb8-e445-4ce5-a1d3-578a0fec1173",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795196050865
+      },
+      {
+        "executionId": "d9582bb8-e445-4ce5-a1d3-578a0fec1173",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795197166136
+      }
+    ],
+    "6.8 Write Property 2 for the error-status mapping": [
+      {
+        "executionId": "d9582bb8-e445-4ce5-a1d3-578a0fec1173",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795197173130
+      },
+      {
+        "executionId": "d9582bb8-e445-4ce5-a1d3-578a0fec1173",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795197602821
+      }
+    ],
+    "6. Implement the API layer": [
+      {
+        "executionId": "d9582bb8-e445-4ce5-a1d3-578a0fec1173",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795197602899
+      }
+    ],
+    "7. Checkpoint - API layer": [
+      {
+        "executionId": "d9582bb8-e445-4ce5-a1d3-578a0fec1173",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795197616251
+      },
+      {
+        "executionId": "d9582bb8-e445-4ce5-a1d3-578a0fec1173",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795197708371
+      }
     ]
   }
 }

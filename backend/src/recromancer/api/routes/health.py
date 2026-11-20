@@ -58,7 +58,7 @@ def make_health_router(readiness: ReadinessProbe, *, timeout_s: float) -> APIRou
     )
     async def readyz() -> JSONResponse:
         ready: bool | None = None
-        with anyio.move_on_after(timeout_s) as scope:
+        with anyio.move_on_after(timeout_s):
             try:
                 ready = await readiness.is_ready()
             except Exception as exc:
@@ -68,12 +68,7 @@ def make_health_router(readiness: ReadinessProbe, *, timeout_s: float) -> APIRou
                 )
                 ready = False
         if ready is None:
-            # No result. Our own timeout sets scope.cancel_called to True. An outer
-            # cancellation (client disconnect) cancels the enclosing scope instead and
-            # leaves ours False, and anyio then raises it out of the with block; if
-            # that ever returned here, re-raise rather than answer 503.
-            if not scope.cancel_called:  # pragma: no cover - anyio raises first
-                raise anyio.get_cancelled_exc_class()
+            # Our own timeout fired. anyio re-raises an outer cancellation itself.
             return JSONResponse(_DEGRADED, status_code=503)
         if ready:
             return JSONResponse(_READY, status_code=200)

@@ -19,8 +19,6 @@ APP_VERSION = "0.1.0"
 Lifespan = Callable[[FastAPI], AbstractAsyncContextManager[None]]
 
 _ERROR_RESPONSES: dict[int | str, dict[str, Any]] = {
-    404: {"model": ErrorBody, "description": "Not found"},
-    422: {"model": ErrorBody, "description": "Validation error"},
     500: {"model": ErrorBody, "description": "Internal error"},
 }
 
