@@ -123,31 +123,31 @@ Conventions that apply to every task:
     - **Validates: Requirements 3.5, 3.6, 3.11, 5.7, 10.2**
 
 - [ ] 6. Implement the API layer
-  - [ ] 6.1 Implement `api/request_id.py`
+  - [x] 6.1 Implement `api/request_id.py`
     - `resolve_request_id(header, new_id)` using `re.fullmatch` on `[A-Za-z0-9._-]{8,64}` (not `^...$`), returning the header unchanged when it matches and `new_id()` otherwise.
     - _Requirements: 5.3, 5.4_
 
-  - [ ] 6.2 Write Property 3 for request-id resolution
+  - [x] 6.2 Write Property 3 for request-id resolution
     - Add `assert_request_id_valid(header, result)` to `invariants.py` using a regex-free oracle (length 8 to 64 and every character in `A-Z a-z 0-9 . _ -`). Create `backend/tests/property/test_request_id_property.py::test_request_id_resolution` with strategies for `None`, valid ids, boundary lengths 7, 8, 64 and 65, trailing `\n`, non-ASCII text and arbitrary text; generator is a counter-based UUID4-shaped fake. Assert the header is returned if and only if the oracle accepts it, otherwise the generated UUID4.
     - **Property 3: Request-id resolution is safe and total**
     - **Validates: Requirements 5.3, 5.4, 10.4**
 
-  - [ ] 6.3 Implement `api/errors.py`
+  - [x] 6.3 Implement `api/errors.py`
     - Define `ErrorBody` (Pydantic: `code`, `message`, `request_id`), the single `ERROR_HTTP_STATUS` `MappingProxyType` (422, 404, 405, 500, 500, 503, 500 as tabulated) and `http_status_for`.
     - Implement the handlers: `RecromancerError` (mapped status, own code and message), `RequestValidationError` (422, `VALIDATION_ERROR`, fixed text, locations only, never input values), `StarletteHTTPException` 404 and 405 (own status, `NOT_FOUND` or `METHOD_NOT_ALLOWED`, fixed text, never `exc.detail`), any other status (original status, `INTERNAL_ERROR`, fixed text), and the catch-all `Exception` handler (500, fixed message). The catch-all reads `request.state.request_id`, re-binds it with `bound_contextvars`, and sets the `X-Request-Id` header itself.
     - Traceback logging at ERROR with only `request_id`, `method`, `path` and the exception class name as extra fields; never body, query string or header values.
     - Verify the Starlette and FastAPI exception class names and handler registration against the installed versions.
     - _Requirements: 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10, 5.6_
 
-  - [ ] 6.4 Implement `api/middleware.py`
+  - [x] 6.4 Implement `api/middleware.py`
     - Pure ASGI `RequestContextMiddleware`: resolve the Request_ID via `resolve_request_id` with the injected id generator, store it in `scope["state"]`, bind `request_id`, `method` and `path` with structlog contextvars, add `X-Request-Id` to every `http.response.start`, emit exactly one access log line (`method`, `path`, `status`, `duration_ms`, no query string) in a `finally` block using the injected `Clock` for timing (status 500 when an exception propagates), then clear the contextvars. Pass non-HTTP scopes through unchanged.
     - _Requirements: 5.3, 5.4, 5.5, 5.6_
 
-  - [ ] 6.5 Implement `api/routes/health.py`
+  - [x] 6.5 Implement `api/routes/health.py`
     - `GET /healthz` returns 200 `{"status": "ok"}` and touches no database, network or filesystem. `GET /readyz` calls `readiness.is_ready()` inside `anyio.move_on_after(readyz_timeout_s)`; ready gives 200 `{"status": "ok", "db": "ok"}`; `False`, an exception (catch `Exception` only, log the class name only) or a timeout gives 503 `{"status": "degraded", "db": "unreachable"}`. Create `api/routes/__init__.py`.
     - _Requirements: 5.10, 5.11, 5.12, 5.13, 5.14_
 
-  - [ ] 6.6 Implement `create_app` in `api/app.py`
+  - [x] 6.6 Implement `create_app` in `api/app.py`
     - `create_app(*, readiness, clock, new_id, lifespan=None, demo_mode=True, production=False, readyz_timeout_s=5.0)`. Never read configuration or import an adapter. When `production` is true construct `FastAPI(docs_url=None, redoc_url=None, openapi_url=None)`, otherwise use the defaults. Register the exception handlers, add `RequestContextMiddleware`, include the health router, and expose `demo_mode` on `app.state`. Ensure the middleware order matches the design (ServerErrorMiddleware outermost, then ours, then ExceptionMiddleware, then the router).
     - _Requirements: 4.5, 5.3, 5.4, 5.5, 5.6, 5.10, 5.11, 5.12, 5.13, 5.14_
 
