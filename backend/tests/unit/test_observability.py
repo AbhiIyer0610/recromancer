@@ -611,3 +611,98 @@ def test_shared_but_acyclic_references_are_not_marked_as_cycles(
     shared = {"v": 1}
     structlog.get_logger("a").info("m", data=[shared, shared])
     assert _lines(stream)[0]["data"] == [{"v": 1}, {"v": 1}]
+
+
+# --- redaction: percent-encoded forms ---
+
+ENCODED_SECRET = "pa ss/w@rd%41-" + "x" * 6
+
+
+def _encoded_forms(secret: str) -> list[str]:
+    forms = [quote(secret), quote(secret, safe="")]
+    assert forms[0] != forms[1]
+    assert all(form != secret for form in forms)
+    return forms
+
+
+@pytest.mark.parametrize("which", [0, 1])
+def test_percent_encoded_secret_is_redacted_in_structlog_record(
+    stream: io.StringIO, which: int
+) -> None:
+    form = _encoded_forms(ENCODED_SECRET)[which]
+    _configure(stream, secrets=(ENCODED_SECRET,))
+    structlog.get_logger("a").info(f"url?k={form}", field=f"v={form}")
+    record = _lines(stream)[0]
+    assert record["message"] == "url?k=***"
+    assert record["field"] == "v=***"
+    for text in (*_encoded_forms(ENCODED_SECRET), ENCODED_SECRET):
+        assert text not in stream.getvalue()
+
+
+@pytest.mark.parametrize("which", [0, 1])
+def test_percent_encoded_secret_is_redacted_in_stdlib_record(
+    stream: io.StringIO, which: int
+) -> None:
+    form = _encoded_forms(ENCODED_SECRET)[which]
+    _configure(stream, secrets=(ENCODED_SECRET,))
+    logging.getLogger("x").error("std %s", form)
+    logging.getLogger("x").error(f"fstring {form}")
+    assert [r["message"] for r in _lines(stream)] == ["std ***", "fstring ***"]
+    for text in (*_encoded_forms(ENCODED_SECRET), ENCODED_SECRET):
+        assert text not in stream.getvalue()
+
+
+@pytest.mark.parametrize("which", [0, 1])
+def test_percent_encoded_secret_is_redacted_in_exception_text(
+    stream: io.StringIO, which: int
+) -> None:
+    form = _encoded_forms(ENCODED_SECRET)[which]
+    _configure(stream, secrets=(ENCODED_SECRET,))
+    try:
+        raise ValueError("bad " + form)
+    except ValueError:
+        structlog.get_logger("a").exception("failed")
+        logging.getLogger("x").exception("failed")
+    for record in _lines(stream):
+        assert "ValueError: bad ***" in record["exception"]
+    for text in (*_encoded_forms(ENCODED_SECRET), ENCODED_SECRET):
+        assert text not in stream.getvalue()
+
+
+def test_url_safe_secret_has_one_form_and_one_replacement(
+    stream: io.StringIO,
+) -> None:
+    assert quote(SECRET) == quote(SECRET, safe="") == SECRET
+    assert obs._build_forms((SECRET,)) == (SECRET,)
+    _configure(stream)
+    structlog.get_logger("a").info(f"a {SECRET} b")
+    assert _lines(stream)[0]["message"] == "a *** b"
+
+
+def test_final_guard_drops_line_when_percent_encoded_form_survives(
+    stream: io.StringIO, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(obs, "_redact", lambda logger, method, event: event)
+    _configure(stream, secrets=(ENCODED_SECRET,))
+    forms = _encoded_forms(ENCODED_SECRET)
+    structlog.get_logger("a").info("leaky " + forms[0])
+    structlog.get_logger("a").info("leaky", items=[{"k": forms[1]}])
+    for record in _lines(stream):
+        assert record["message"] == obs.REDACTION_FAILED_MESSAGE
+    for text in forms:
+        assert text not in stream.getvalue()
+
+
+def test_longer_encoded_form_containing_shorter_secret_is_replaced_first(
+    stream: io.StringIO,
+) -> None:
+    short = "sh0rt-" + "a" * 6
+    long = "pa ss/" + short
+    encoded = quote(long, safe="")
+    assert short in encoded
+    forms = obs._build_forms((short, long))
+    assert forms.index(encoded) < forms.index(short)
+    _configure(stream, secrets=(short, long))
+    structlog.get_logger("a").info(f"v {encoded} end {short}")
+    assert _lines(stream)[0]["message"] == "v *** end ***"
+    assert "pa%20ss" not in stream.getvalue()

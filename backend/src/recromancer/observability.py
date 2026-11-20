@@ -30,6 +30,7 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, Protocol, TextIO
+from urllib.parse import quote
 
 import structlog
 from structlog import contextvars as _ctx
@@ -82,6 +83,8 @@ def _build_forms(secret_values: Iterable[str]) -> tuple[str, ...]:
         forms.add(secret)
         forms.add(json.dumps(secret)[1:-1])
         forms.add(json.dumps(secret, ensure_ascii=False)[1:-1])
+        forms.add(quote(secret))
+        forms.add(quote(secret, safe=""))
     forms.discard("")
     return tuple(sorted(forms, key=lambda form: (-len(form), form)))
 

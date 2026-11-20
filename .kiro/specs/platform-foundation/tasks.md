@@ -99,7 +99,7 @@ Conventions that apply to every task:
 - [x] 4. Checkpoint - Foundation core
   - Ensure all tests pass, ask the user if questions arise. Run `cd backend; ruff check .; ruff format --check .; mypy; lint-imports; pytest` and confirm the coverage floor holds.
 
-- [ ] 5. Implement ports and structured observability
+- [x] 5. Implement ports and structured observability
   - [x] 5.1 Create `service/ports.py`
     - Define the `ReadinessProbe`, `Clock` and `DbDiagnostics` protocols and the `IdGenerator` alias exactly as in the design. Import only the stdlib and `domain`; `lint-imports` must still pass.
     - _Requirements: 5.14, 2.2_
@@ -107,7 +107,7 @@ Conventions that apply to every task:
   - [x] 5.2 Implement `observability.py`
     - Replace the stub (if any). Import only `domain`, the stdlib and `structlog`; declare its own minimal local `Protocol` for the clock (`now() -> datetime`) so it does not import `service`; the `Clock` port satisfies it structurally.
     - Implement idempotent `configure_logging(*, level, clock, secret_values=(), stream=sys.stdout)` with the processor chain from the design (`merge_contextvars`, `logger` and `level`, UTC ISO-8601 `timestamp` with `Z`, `event` renamed to `message`, `exc_info` to `exception`, redaction, `JSONRenderer`), routed through `ProcessorFormatter` so stdlib and uvicorn records get the same treatment, and disable `uvicorn.access`.
-    - Redaction processor: keys matched by `is_sensitive_key` become `***`; `question`, `question_text` and `query_text` become `***`; registered secret values are replaced in every remaining string including the exception text; `SecretStr` renders as `***`.
+    - Redaction processor: keys matched by `is_sensitive_key` become `***`; `question`, `question_text` and `query_text` become `***`; registered secret values are replaced in every remaining string including the exception text; registered secrets are also replaced in their percent-encoded forms; `SecretStr` renders as `***`.
     - Implement `question_log_fields(text) -> {"question_len": len(text)}`.
     - Verify the structlog API names used (`merge_contextvars`, `ProcessorFormatter`, `JSONRenderer`, `bound_contextvars`) against the installed version.
     - _Requirements: 5.1, 5.2, 5.5, 5.7, 5.8, 5.9_
@@ -116,7 +116,7 @@ Conventions that apply to every task:
     - Create `backend/tests/unit/test_observability.py` with a `StringIO` stream and a fake clock: every record is one JSON line with `timestamp` (UTC, ISO-8601), `level`, `logger`, `message`; context variables appear on every record; sensitive keys, question keys and registered secret values (also inside exception text and JSON-escaped) are redacted; `SecretStr` renders `***`; `question_log_fields` returns only the length; calling `configure_logging` twice does not duplicate output.
     - _Requirements: 5.1, 5.2, 5.5, 5.7, 5.8, 5.9_
 
-  - [ ] 5.4 Create the invariants module and write Property 1
+  - [x] 5.4 Create the invariants module and write Property 1
     - Create `backend/tests/property/invariants.py` (no test functions) with `assert_secret_absent(secret, *texts)` that checks the raw, JSON-escaped and percent-encoded forms. Create `backend/tests/property/test_secret_leak_property.py::test_secret_never_appears`, tagged `# Feature: platform-foundation, Property 1: Secret values never appear in observable output`.
     - Strategy `secret_values()`: text of 8 to 64 characters without surrogates or NUL, paired with a field chosen from the three secret fields and an optional invalid co-field; use `assume` to drop secrets that are substrings of the same output produced for a fixed placeholder secret. Build settings through `Settings.from_env(environ=mapping)` and log through `configure_logging` with `stream=io.StringIO()` and the settings' `secret_values()`. Check `repr`, `str`, `log_safe_summary()`, `model_dump_json()`, any `ConfigError` message and the JSON log output. Build all fakes inside the test body (no function-scoped fixtures under `@given`).
     - **Property 1: Secret values never appear in observable output**
