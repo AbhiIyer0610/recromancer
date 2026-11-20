@@ -178,6 +178,54 @@
         "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
         "timestamp": 1795024038552
       }
+    ],
+    "4. Checkpoint - Foundation core": [
+      {
+        "executionId": "f63dccb2-4585-48b0-8722-b555cf48db0e",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795101700776
+      },
+      {
+        "executionId": "f63dccb2-4585-48b0-8722-b555cf48db0e",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795101759179
+      }
+    ],
+    "5.1 Create `service/ports.py`": [
+      {
+        "executionId": "f63dccb2-4585-48b0-8722-b555cf48db0e",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795101759614
+      },
+      {
+        "executionId": "f63dccb2-4585-48b0-8722-b555cf48db0e",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795101838014
+      }
+    ],
+    "5.2 Implement `observability.py`": [
+      {
+        "executionId": "f63dccb2-4585-48b0-8722-b555cf48db0e",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795101838440
+      },
+      {
+        "executionId": "f63dccb2-4585-48b0-8722-b555cf48db0e",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795102135881
+      }
+    ],
+    "5.3 Write unit tests `test_observability.py`": [
+      {
+        "executionId": "f63dccb2-4585-48b0-8722-b555cf48db0e",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795102135813
+      },
+      {
+        "executionId": "f63dccb2-4585-48b0-8722-b555cf48db0e",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795102372722
+      }
     ]
   }
 }

@@ -96,15 +96,15 @@ Conventions that apply to every task:
     - No file is exempted from the guard except `backend/src/recromancer/config.py`; in particular `backend/tests/conftest.py` is scanned. Confirm the guard passes on the tree including `conftest.py`.
     - _Requirements: 3.2, 3.17_
 
-- [ ] 4. Checkpoint - Foundation core
+- [x] 4. Checkpoint - Foundation core
   - Ensure all tests pass, ask the user if questions arise. Run `cd backend; ruff check .; ruff format --check .; mypy; lint-imports; pytest` and confirm the coverage floor holds.
 
 - [ ] 5. Implement ports and structured observability
-  - [ ] 5.1 Create `service/ports.py`
+  - [x] 5.1 Create `service/ports.py`
     - Define the `ReadinessProbe`, `Clock` and `DbDiagnostics` protocols and the `IdGenerator` alias exactly as in the design. Import only the stdlib and `domain`; `lint-imports` must still pass.
     - _Requirements: 5.14, 2.2_
 
-  - [ ] 5.2 Implement `observability.py`
+  - [x] 5.2 Implement `observability.py`
     - Replace the stub (if any). Import only `domain`, the stdlib and `structlog`; declare its own minimal local `Protocol` for the clock (`now() -> datetime`) so it does not import `service`; the `Clock` port satisfies it structurally.
     - Implement idempotent `configure_logging(*, level, clock, secret_values=(), stream=sys.stdout)` with the processor chain from the design (`merge_contextvars`, `logger` and `level`, UTC ISO-8601 `timestamp` with `Z`, `event` renamed to `message`, `exc_info` to `exception`, redaction, `JSONRenderer`), routed through `ProcessorFormatter` so stdlib and uvicorn records get the same treatment, and disable `uvicorn.access`.
     - Redaction processor: keys matched by `is_sensitive_key` become `***`; `question`, `question_text` and `query_text` become `***`; registered secret values are replaced in every remaining string including the exception text; `SecretStr` renders as `***`.
@@ -112,7 +112,7 @@ Conventions that apply to every task:
     - Verify the structlog API names used (`merge_contextvars`, `ProcessorFormatter`, `JSONRenderer`, `bound_contextvars`) against the installed version.
     - _Requirements: 5.1, 5.2, 5.5, 5.7, 5.8, 5.9_
 
-  - [ ] 5.3 Write unit tests `test_observability.py`
+  - [x] 5.3 Write unit tests `test_observability.py`
     - Create `backend/tests/unit/test_observability.py` with a `StringIO` stream and a fake clock: every record is one JSON line with `timestamp` (UTC, ISO-8601), `level`, `logger`, `message`; context variables appear on every record; sensitive keys, question keys and registered secret values (also inside exception text and JSON-escaped) are redacted; `SecretStr` renders `***`; `question_log_fields` returns only the length; calling `configure_logging` twice does not duplicate output.
     - _Requirements: 5.1, 5.2, 5.5, 5.7, 5.8, 5.9_
 
