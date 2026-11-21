@@ -182,26 +182,26 @@ Conventions that apply to every task:
     - Create `backend/tests/fakes.py` with `FAIL_MARKER = "-- fail"` defined once and `FakeMigrationStore` modelling the executed SQL history as an ordered tuple and the recorded set as a dict `filename -> (checksum, applied_at)`, changed together; `apply` raises `StoreError` when the SQL starts with `FAIL_MARKER` and records nothing; `locked` is a context manager that tracks exclusivity; also a deterministic `FakeClock`.
     - _Requirements: 7.4, 7.8, 7.9, 10.8_
 
-  - [ ] 8.3 Add the initial migration, `.gitattributes` and packaging test
+  - [x] 8.3 Add the initial migration, `.gitattributes` and packaging test
     - Create `backend/src/recromancer/db/migrations/0001_create_vector_extension.sql` containing exactly `CREATE EXTENSION IF NOT EXISTS vector;`. Create the repo-root `.gitattributes` with `*.sql text eol=lf` and `*.py text eol=lf`. Check that `.gitignore` ignores neither `.sql` files, `py.typed` nor any `.kiro/` path.
     - Create `backend/tests/unit/test_packaging.py`: `importlib.resources` finds the `.sql` file in the package, its text equals the required statement, and the pyproject wheel target lists `src/recromancer`. Confirm with `pip wheel --no-deps backend -w $env:TEMP\wheelcheck` that the wheel contains the `.sql` file and `py.typed`, then delete the temporary directory.
     - _Requirements: 7.1, 7.15, 1.1, 1.4_
 
-  - [ ] 8.4 Write runner unit tests `test_runner.py`
+  - [x] 8.4 Write runner unit tests `test_runner.py`
     - Create `backend/tests/unit/test_runner.py` using `FakeMigrationStore` and `FakeClock`: discovery rules (ordering, bad names, duplicate prefixes, missing directory, ignoring non-`.sql` files); skipping recorded migrations with matching checksums; checksum mismatch names the file and applies nothing; out-of-order non-blank pending file (record `0003`, offer pending `0002`) raises `MIGRATION_FAILED` naming `0002`, applies nothing and leaves the store unchanged, while a pending file above the highest still applies; a blank file numbered below the highest recorded number does not raise (warning only, store state unchanged, and a second identical run also succeeds); the same file later filled with SQL does raise `MIGRATION_FAILED` naming the file and applies nothing; empty file warning without recording, then a later non-empty version applies; error wrapping includes filename and original message and is truncated to 500 characters; lock acquired before `ensure_table` and held for the whole run; `applied_at` comes from the injected clock; a failing migration records nothing.
     - _Requirements: 7.1, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 7.10, 7.11_
 
-  - [ ] 8.5 Create the migration strategy and its guard test
+  - [x] 8.5 Create the migration strategy and its guard test
     - Create `backend/tests/property/strategies.py` with `migration_sets()`: a composite producing 0 to 8 migrations with strictly increasing `NNNN_word.sql` names and SQL drawn from a safe alphabet that excludes `-` (so no comment can form), including blank files, plus `.filter(lambda sql: not sql.lstrip().startswith(FAIL_MARKER))` as a second guard; import `FAIL_MARKER` from `tests/fakes.py`.
     - Create `backend/tests/unit/test_migration_strategy.py`: draw at least 100 examples and assert that no generated file starts with `-- fail` on its stripped text, names are valid and strictly increasing.
     - _Requirements: 10.1, 10.5, 10.6_
 
-  - [ ] 8.6 Write Property 4 for migration idempotency
+  - [x] 8.6 Write Property 4 for migration idempotency
     - Add `assert_same_state(a, b)` to `invariants.py` (executed-SQL history and recorded `_schema_migrations` contents, ignoring nothing else). Create `backend/tests/property/test_migration_properties.py::test_apply_twice_is_idempotent` running the runner twice on a fresh `FakeMigrationStore` with a `FakeClock`; assert the state after the second run equals the state after the first and the second report lists no applied files.
     - **Property 4: Applying a migration set twice is idempotent**
     - **Validates: Requirements 7.5, 10.5**
 
-  - [ ] 8.7 Write Property 5 for prefix equivalence
+  - [x] 8.7 Write Property 5 for prefix equivalence
     - In `test_migration_properties.py` add `test_prefix_equivalence`: draw a migration set and `k = draw(integers(0, len(set)))`; run the first `k` migrations and then the full set on one store, run the full set once on a fresh store, and assert `assert_same_state` holds, including the `k = 0` and `k = n` boundaries.
     - **Property 5: Prefix-then-rest equals all-at-once**
     - **Validates: Requirements 10.6**

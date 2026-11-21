@@ -417,6 +417,64 @@
         "executionId": "694daf11-61a5-45af-b9b0-41cea42940ee",
         "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
         "timestamp": 1795200318794
+      },
+      {
+        "executionId": "fc08d642-31e1-4789-96c6-fbb1d412b590",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795284236945
+      },
+      {
+        "executionId": "fc08d642-31e1-4789-96c6-fbb1d412b590",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795284376865
+      }
+    ],
+    "8.4 Write runner unit tests `test_runner.py`": [
+      {
+        "executionId": "fc08d642-31e1-4789-96c6-fbb1d412b590",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795284377415
+      },
+      {
+        "executionId": "fc08d642-31e1-4789-96c6-fbb1d412b590",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795284583799
+      }
+    ],
+    "8.5 Create the migration strategy and its guard test": [
+      {
+        "executionId": "fc08d642-31e1-4789-96c6-fbb1d412b590",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795284584051
+      },
+      {
+        "executionId": "fc08d642-31e1-4789-96c6-fbb1d412b590",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795284846472
+      }
+    ],
+    "8.6 Write Property 4 for migration idempotency": [
+      {
+        "executionId": "fc08d642-31e1-4789-96c6-fbb1d412b590",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795284846691
+      },
+      {
+        "executionId": "fc08d642-31e1-4789-96c6-fbb1d412b590",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795285100353
+      }
+    ],
+    "8.7 Write Property 5 for prefix equivalence": [
+      {
+        "executionId": "fc08d642-31e1-4789-96c6-fbb1d412b590",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795285100472
+      },
+      {
+        "executionId": "fc08d642-31e1-4789-96c6-fbb1d412b590",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795285667033
       }
     ]
   }

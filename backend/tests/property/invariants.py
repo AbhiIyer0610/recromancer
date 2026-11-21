@@ -13,6 +13,7 @@ from http import HTTPStatus
 from urllib.parse import quote
 
 from recromancer.domain.errors import ErrorCode
+from tests.fakes import Snapshot
 
 
 def secret_forms(secret: str) -> dict[str, str]:
@@ -109,3 +110,35 @@ def assert_mapping_total(
             raise AssertionError(
                 f"{name}: status {status} is not a defined HTTP status"
             ) from None
+
+
+def assert_same_state(a: Snapshot, b: Snapshot) -> None:
+    """Assert two ``FakeMigrationStore.snapshot()`` values are identical.
+
+    Compares the executed-SQL history and the recorded entries (name, checksum,
+    applied_at). Messages report positions and file names only, never SQL text.
+    """
+    history_a, recorded_a = a
+    history_b, recorded_b = b
+    if len(history_a) != len(history_b):
+        raise AssertionError(
+            f"history length differs: {len(history_a)} vs {len(history_b)}"
+        )
+    for index, (sql_a, sql_b) in enumerate(zip(history_a, history_b, strict=True)):
+        if sql_a != sql_b:
+            raise AssertionError(f"history differs first at index {index}")
+    by_name_a = {name: (checksum, at) for name, checksum, at in recorded_a}
+    by_name_b = {name: (checksum, at) for name, checksum, at in recorded_b}
+    added = sorted(set(by_name_b) - set(by_name_a))
+    removed = sorted(set(by_name_a) - set(by_name_b))
+    changed = sorted(
+        name
+        for name in set(by_name_a) & set(by_name_b)
+        if by_name_a[name] != by_name_b[name]
+    )
+    if added or removed or changed:
+        raise AssertionError(
+            f"recorded differs: added {added}, removed {removed}, changed {changed}"
+        )
+    if recorded_a != recorded_b:
+        raise AssertionError("recorded entries differ in order")

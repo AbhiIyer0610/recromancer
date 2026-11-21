@@ -33,6 +33,9 @@ def test_wheel_target_lists_the_source_package() -> None:
     config = tomllib.loads((_BACKEND / "pyproject.toml").read_text(encoding="utf-8"))
     wheel = config["tool"]["hatch"]["build"]["targets"]["wheel"]
     assert "src/recromancer" in wheel["packages"]
+    package_dir = _BACKEND / "src/recromancer"
+    assert (package_dir / "db" / "migrations" / _NAME).is_file()
+    assert (package_dir / "py.typed").is_file()
 
 
 def test_gitattributes_pins_lf_for_sql_and_python() -> None:
