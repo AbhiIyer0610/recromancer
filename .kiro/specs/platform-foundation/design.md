@@ -691,7 +691,7 @@ flowchart TD
   B --> C[applied = store.applied]
   C --> D{Pre-flight 1: any recorded file<br/>with a different checksum?}
   D -- yes --> X[raise MigrationError naming the file<br/>nothing applied]
-  D -- no --> D2{Pre-flight 2: any pending file numbered<br/>below the highest applied number?}
+  D -- no --> D2{Pre-flight 2: any non-blank pending file numbered<br/>below the highest applied number? blank files exempt}
   D2 -- yes --> X2[raise MigrationError MIGRATION_FAILED<br/>naming the file; nothing applied]
   D2 -- no --> E[for each migration in filename order]
   E --> F{recorded?}
@@ -709,10 +709,12 @@ Details:
 - **Pre-flight (R7.6, R7.7).** Both checks run on the whole set before the first `apply`, so a
   failure leaves the database untouched. (1) Checksum: every on-disk file that is recorded must
   match its stored checksum. (2) Order: let `highest` be the largest four-digit number among
-  recorded filenames; any unrecorded file (including a blank one) numbered below `highest` raises
+  recorded filenames; any unrecorded NON-blank file numbered below `highest` raises
   `MigrationError` with code `MIGRATION_FAILED`, naming the file. The message tells the developer
   to renumber the file above `highest`, since migrations are forward-only. Pending files numbered
-  above `highest` apply as usual.
+  above `highest` apply as usual. Blank files are exempt from check (2): they are skipped with a
+  warning naming them and never recorded (R7.11), so a second run of the same set does not fail
+  (Property 4).
 - **Lock before table creation.** Two runners racing on `CREATE TABLE IF NOT EXISTS` can still fail
   with a unique violation in the catalog, so the lock is taken first and `ensure_table` runs under it.
 - **Lock mechanics.** The Postgres store uses one connection in autocommit mode. It calls
@@ -745,7 +747,9 @@ Details:
   `"<filename>: <original message>"`, truncated to the 500 character message limit.
 - **Time.** `applied_at` comes from the injected `Clock`, so the fake store is deterministic.
 - **Empty files.** Blank or whitespace-only SQL is skipped with a warning to stderr and is not
-  recorded, so adding content later applies it normally.
+  recorded, and is exempt from the out-of-order pre-flight (R7.11). Adding content later makes it
+  a non-blank pending file: it applies normally if numbered above `highest`, and raises
+  `MIGRATION_FAILED` naming the file if numbered below it.
 - **Forward-only.** There is no down path. Fixes are new files.
 
 CLI (`python -m recromancer.db.migrate`, run from `backend/`): `load_dotenv()`, `Settings.from_env()`,
@@ -1099,7 +1103,7 @@ and then running the full set yields the same executed-SQL history and the same 
 | Any exception that is not `RecromancerError`, `RequestValidationError` or `StarletteHTTPException` | 500, fixed message, traceback logged at ERROR with the allowed fields only | `INTERNAL_ERROR` |
 | Database down or slow on `/readyz` | 503 `{"status": "degraded", "db": "unreachable"}`; cause logged by class name only | not an error body |
 | Migration checksum mismatch | Pre-flight failure naming the file; nothing applied; CLI exit 1 | `MIGRATION_FAILED` |
-| Pending migration numbered below the highest applied one | Pre-flight failure naming the file; nothing applied; CLI exit 1 | `MIGRATION_FAILED` |
+| Non-blank pending migration numbered below the highest applied one (blank files are only skipped with a warning) | Pre-flight failure naming the file; nothing applied; CLI exit 1 | `MIGRATION_FAILED` |
 | Database down at API startup | App starts (pool opened with `wait=False`); `/healthz` 200, `/readyz` 503 until reachable | not an error body |
 | Exception propagating through the middleware | Access log line still written in `finally`, with status 500 | `INTERNAL_ERROR` |
 | Migration SQL error | Transaction rolled back; error names the file and the original message, truncated to 500 characters | `MIGRATION_FAILED` |
@@ -1186,7 +1190,9 @@ Notes:
   defined once in the fake store module and imported by the strategy.
 - Migration sets are generated with strictly increasing names, and the prefix-then-rest run in
   Property 5 only ever adds higher-numbered files, so the out-of-order pre-flight (R7.7) never
-  fires inside the properties. That rule is covered by the `test_runner.py` fake-store unit test.
+  fires inside the properties. Blank files are exempt from that pre-flight and never recorded, so
+  Property 4 holds for sets that contain them. The rule is covered by the `test_runner.py`
+  fake-store unit tests.
 
 ### Unit tests (`tests/unit/`)
 
@@ -1205,7 +1211,7 @@ Notes:
 | `test_migration_strategy.py` | `migration_sets()` output never starts with `-- fail` (checked on the stripped text of every generated file, 100+ examples) |
 | `test_observability.py` | R5.1 to 5.2, 5.5, 5.7 to 5.9: required fields, context binding, redaction, `question_log_fields` |
 | `test_health.py` | R5.10 to 5.13: `/healthz` calls no probe; `/readyz` ready, not ready, raising, hanging with `readyz_timeout_s=0.05` |
-| `test_runner.py` | R7: discovery rules, pre-flight checksum mismatch (R7.6), out-of-order pending file (R7.7: with the fake store, record `0003`, offer pending `0002`, assert `MIGRATION_FAILED` naming `0002`, nothing applied and the store unchanged; a pending file above the highest applied number still applies), empty file warning, error wrapping, CLI `main` exit codes and messages |
+| `test_runner.py` | R7: discovery rules, pre-flight checksum mismatch (R7.6), out-of-order non-blank pending file (R7.7: with the fake store, record `0003`, offer pending `0002`, assert `MIGRATION_FAILED` naming `0002`, nothing applied and the store unchanged; a pending file above the highest applied number still applies), blank file `0002` with `0003` recorded (R7.11: no exception, warning naming `0002`, store unchanged, and a second identical run also succeeds), the same `0002` later filled with SQL (R7.7: `MIGRATION_FAILED` naming `0002`, nothing applied), empty file warning, error wrapping, CLI `main` exit codes and messages |
 | `test_packaging.py` | R1 and R7.15: `.sql` found through `importlib.resources`; wheel target configured; initial migration text |
 | `test_doctor.py` | R6.6 to 6.12: injected checks, run-all-then-exit, ASCII-only output (masking rule itself is in `test_doctor_masking.py`) |
 | `test_secret_scan.py` | R9.7 to 9.13: one runtime-built token per pattern, near-miss below minimum length, self-exclusion, output has no matched text, exit codes |

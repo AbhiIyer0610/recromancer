@@ -375,6 +375,49 @@
         "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
         "timestamp": 1795197708371
       }
+    ],
+    "8.0 Create `docker-compose.yml` and `.env.example`": [
+      {
+        "executionId": "694daf11-61a5-45af-b9b0-41cea42940ee",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795199872023
+      },
+      {
+        "executionId": "694daf11-61a5-45af-b9b0-41cea42940ee",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795200011076
+      }
+    ],
+    "8.1 Implement `db/runner.py`": [
+      {
+        "executionId": "694daf11-61a5-45af-b9b0-41cea42940ee",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795200016681
+      },
+      {
+        "executionId": "694daf11-61a5-45af-b9b0-41cea42940ee",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795200183014
+      }
+    ],
+    "8.2 Create the in-memory `FakeMigrationStore`": [
+      {
+        "executionId": "694daf11-61a5-45af-b9b0-41cea42940ee",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795200188324
+      },
+      {
+        "executionId": "694daf11-61a5-45af-b9b0-41cea42940ee",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795200311850
+      }
+    ],
+    "8.3 Add the initial migration, `.gitattributes` and packaging test": [
+      {
+        "executionId": "694daf11-61a5-45af-b9b0-41cea42940ee",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795200318794
+      }
     ]
   }
 }

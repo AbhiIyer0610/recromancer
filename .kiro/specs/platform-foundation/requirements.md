@@ -55,7 +55,7 @@ baseline without manual setup.
 2. THE Scaffold SHALL use hatchling as the build backend, declared in `backend/pyproject.toml`.
 3. THE Scaffold SHALL declare a minimum Python version of 3.11 in `backend/pyproject.toml`.
 4. THE Scaffold SHALL create the sub-packages `domain`, `grounding`, `ingest`, `retrieval`, `llm`, `embed`, `db`, `service`, `api` and `mcp`, each containing only an `__init__.py` (with an optional module docstring), and SHALL place a `py.typed` marker file in the `recromancer` root package.
-5. THE Scaffold SHALL declare in `backend/pyproject.toml` the runtime dependencies `fastapi`, `pydantic`, `pydantic-settings`, `httpx`, `structlog`, `psycopg[binary]` and `psycopg-pool`, and a `[dev]` optional dependency group containing `pytest`, `pytest-cov`, `hypothesis`, `anyio`, `ruff`, `mypy` and `import-linter`.
+5. THE Scaffold SHALL declare in `backend/pyproject.toml` the runtime dependencies `fastapi`, `pydantic`, `pydantic-settings`, `httpx`, `structlog`, `psycopg[binary]` and `psycopg-pool`, and a `[dev]` optional dependency group that contains at least `pytest`, `pytest-cov`, `hypothesis`, `anyio`, `ruff`, `mypy` and `import-linter` and MAY contain additional test-support packages (for example `httpx2`, required by the Starlette test client).
 6. THE Scaffold SHALL configure ruff with at minimum the `E`, `F`, `I`, `UP` and `B` rule sets enabled, and `line-length = 88`.
 7. THE Scaffold SHALL configure mypy in `backend/pyproject.toml` with `strict = true` and `python_version = "3.11"`, and SHALL configure mypy to check both `src` and `tests` with no `exclude` entry for the `tests/` directory tree.
 8. THE Scaffold SHALL configure pytest with `testpaths = ["tests"]` and `addopts = "--cov=recromancer --cov-report=term-missing"`, and SHALL set `fail_under = 85` under `[tool.coverage.report]`.
@@ -198,11 +198,11 @@ same schema state without depending on a heavy migration framework.
 4. WHEN the Migration_Runner starts applying migrations, THE Migration_Runner SHALL acquire a Postgres advisory lock with `pg_advisory_lock` and hold it for the whole run, so that concurrent runners serialise.
 5. WHEN a migration is already recorded in `_schema_migrations` and its current Checksum equals the stored Checksum, THE Migration_Runner SHALL skip it without error.
 6. IF an already-applied migration file has a Checksum that differs from the stored Checksum, THEN THE Migration_Runner SHALL fail with an error naming that file and exit with a non-zero code without applying further migrations.
-7. IF a pending (not yet recorded) migration file has a number lower than the highest numbered migration already recorded in `_schema_migrations`, THEN THE Migration_Runner SHALL fail with an error having code `MIGRATION_FAILED` that names the file, and SHALL apply no further migrations.
+7. IF a non-empty pending (not yet recorded) migration file has a number lower than the highest numbered migration already recorded in `_schema_migrations`, THEN THE Migration_Runner SHALL fail with an error having code `MIGRATION_FAILED` that names the file, and SHALL apply no further migrations.
 8. WHEN a pending migration file is applied, THE Migration_Runner SHALL execute it, together with its `_schema_migrations` record, in one transaction.
 9. IF a migration raises a database error, THEN THE Migration_Runner SHALL roll back that migration's transaction and raise an exception that includes the migration filename and the original database error message.
 10. THE Migration_Runner SHALL treat migrations as forward-only: it SHALL provide no down migrations, and schema fixes SHALL be made by adding new migration files.
-11. WHEN a migration file is empty, THE Migration_Runner SHALL skip it and write a warning naming the file to standard error.
+11. WHEN a migration file is empty, THE Migration_Runner SHALL skip it without recording it, write a warning naming the file to standard error, and exclude it from the out-of-order check of criterion 7.
 12. THE Migration_Runner SHALL be invokable as `python -m recromancer.db.migrate` from the `backend/` directory.
 13. IF the database connection fails or the migrations directory is missing, THEN THE Migration_Runner SHALL print a descriptive error and exit with code 1.
 14. WHEN the Migration_Runner is run and no migrations are pending, THE Migration_Runner SHALL print a message containing `no migrations pending` and exit with code 0.

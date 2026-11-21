@@ -166,19 +166,19 @@ Conventions that apply to every task:
   - Ensure all tests pass, ask the user if questions arise. Run `cd backend; ruff check .; ruff format --check .; mypy; lint-imports; pytest` and confirm the coverage floor holds.
 
 - [ ] 8. Implement the local database environment, migration system and Postgres adapters
-  - [ ] 8.0 Create `docker-compose.yml` and `.env.example`
+  - [x] 8.0 Create `docker-compose.yml` and `.env.example`
     - `docker-compose.yml` at the repo root with service `db` using `pgvector/pgvector:pg16`, `POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB` all `recromancer`, port `"127.0.0.1:5432:5432"`, the named volume `recromancer-pgdata`, and a healthcheck `pg_isready -U recromancer -d recromancer` with `interval: 10s`, `timeout: 5s`, `retries: 5`.
     - `.env.example` with `RECROMANCER_` variables only, exactly those in the design (`PRODUCTION`, `DEMO_MODE`, `DATABASE_URL`, `ADMIN_TOKEN`, `ANTHROPIC_API_KEY`, `LOG_LEVEL`). Secret placeholders are blank or obviously non-secret text such as `change-me-local-only`, never a token-shaped value: `RECROMANCER_ADMIN_TOKEN` equals `ADMIN_TOKEN_PLACEHOLDER` (the design requires a test that they match, see task 11.5) and `RECROMANCER_ANTHROPIC_API_KEY` is blank (`RECROMANCER_ANTHROPIC_API_KEY=`), which `Settings` reads as unset (task 3.1).
     - Verify in PowerShell: `docker compose up -d`, then `docker compose ps` shows the `db` service `healthy`. If Docker is unavailable, skip only this verification, state the reason in the task notes, and do not block creation of the two files.
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 3.18_
 
-  - [ ] 8.1 Implement `db/runner.py`
+  - [x] 8.1 Implement `db/runner.py`
     - Define `Migration` (frozen: `name`, `sql`, `checksum`), `RunReport(applied, skipped, empty)`, `StoreError`, `MigrationError(RecromancerError)` with `ErrorCode.MIGRATION_FAILED`, the `MigrationStore` protocol (`locked`, `ensure_table`, `applied`, `apply`), `discover(directory: Traversable)` and `run(store, migrations, clock, warn)`. Do not import `psycopg`, `service` or any other adapter; type the clock with a small local protocol.
     - `discover`: names matching `[0-9]{4}_[a-z0-9_]+\.sql`, sorted by filename; error for a missing directory, a `.sql` file with a non-matching name, and duplicate numeric prefixes; non-`.sql` files ignored; SHA-256 over file bytes.
-    - `run`: acquire the lock, `ensure_table` under it, pre-flight 1 (checksum mismatch names the file) and pre-flight 2 (a pending or blank file numbered below the highest recorded number raises `MIGRATION_FAILED` naming the file), both before the first `apply`; skip recorded files; blank SQL skipped with a warning naming the file and not recorded; apply the rest in order with `applied_at` from the injected clock; wrap `StoreError` as `MigrationError` with `"<filename>: <original message>"` truncated to 500 characters; forward-only, no down path.
+    - `run`: acquire the lock, `ensure_table` under it, pre-flight 1 (checksum mismatch names the file) and pre-flight 2 (a NON-blank pending file numbered below the highest recorded number raises `MIGRATION_FAILED` naming the file), both before the first `apply`; skip recorded files; blank files are skipped with a warning naming them, are never recorded and are exempt from pre-flight 2; apply the rest in order with `applied_at` from the injected clock; wrap `StoreError` as `MigrationError` with `"<filename>: <original message>"` truncated to 500 characters; forward-only, no down path.
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 7.10, 7.11_
 
-  - [ ] 8.2 Create the in-memory `FakeMigrationStore`
+  - [x] 8.2 Create the in-memory `FakeMigrationStore`
     - Create `backend/tests/fakes.py` with `FAIL_MARKER = "-- fail"` defined once and `FakeMigrationStore` modelling the executed SQL history as an ordered tuple and the recorded set as a dict `filename -> (checksum, applied_at)`, changed together; `apply` raises `StoreError` when the SQL starts with `FAIL_MARKER` and records nothing; `locked` is a context manager that tracks exclusivity; also a deterministic `FakeClock`.
     - _Requirements: 7.4, 7.8, 7.9, 10.8_
 
@@ -188,7 +188,7 @@ Conventions that apply to every task:
     - _Requirements: 7.1, 7.15, 1.1, 1.4_
 
   - [ ] 8.4 Write runner unit tests `test_runner.py`
-    - Create `backend/tests/unit/test_runner.py` using `FakeMigrationStore` and `FakeClock`: discovery rules (ordering, bad names, duplicate prefixes, missing directory, ignoring non-`.sql` files); skipping recorded migrations with matching checksums; checksum mismatch names the file and applies nothing; out-of-order pending file (record `0003`, offer pending `0002`) raises `MIGRATION_FAILED` naming `0002`, applies nothing and leaves the store unchanged, while a pending file above the highest still applies; empty file warning without recording, then a later non-empty version applies; error wrapping includes filename and original message and is truncated to 500 characters; lock acquired before `ensure_table` and held for the whole run; `applied_at` comes from the injected clock; a failing migration records nothing.
+    - Create `backend/tests/unit/test_runner.py` using `FakeMigrationStore` and `FakeClock`: discovery rules (ordering, bad names, duplicate prefixes, missing directory, ignoring non-`.sql` files); skipping recorded migrations with matching checksums; checksum mismatch names the file and applies nothing; out-of-order non-blank pending file (record `0003`, offer pending `0002`) raises `MIGRATION_FAILED` naming `0002`, applies nothing and leaves the store unchanged, while a pending file above the highest still applies; a blank file numbered below the highest recorded number does not raise (warning only, store state unchanged, and a second identical run also succeeds); the same file later filled with SQL does raise `MIGRATION_FAILED` naming the file and applies nothing; empty file warning without recording, then a later non-empty version applies; error wrapping includes filename and original message and is truncated to 500 characters; lock acquired before `ensure_table` and held for the whole run; `applied_at` comes from the injected clock; a failing migration records nothing.
     - _Requirements: 7.1, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 7.10, 7.11_
 
   - [ ] 8.5 Create the migration strategy and its guard test
