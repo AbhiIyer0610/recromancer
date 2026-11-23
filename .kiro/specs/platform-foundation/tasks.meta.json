@@ -476,6 +476,73 @@
         "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
         "timestamp": 1795285667033
       }
+    ],
+    "8.8 Implement the Postgres adapters in `db/postgres.py`": [
+      {
+        "executionId": "38cf6543-ccb4-460d-af4e-2bcd62cc69dd",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795452655301
+      },
+      {
+        "executionId": "38cf6543-ccb4-460d-af4e-2bcd62cc69dd",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795453260611
+      }
+    ],
+    "8.9 Implement the migrate CLI in `db/migrate.py`": [
+      {
+        "executionId": "38cf6543-ccb4-460d-af4e-2bcd62cc69dd",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795453260665
+      },
+      {
+        "executionId": "38cf6543-ccb4-460d-af4e-2bcd62cc69dd",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795453518106
+      }
+    ],
+    "8.10 Write CLI unit tests": [
+      {
+        "executionId": "38cf6543-ccb4-460d-af4e-2bcd62cc69dd",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795453518180
+      },
+      {
+        "executionId": "38cf6543-ccb4-460d-af4e-2bcd62cc69dd",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795453645012
+      }
+    ],
+    "8.11 Add the database-URL fixture, contract tests and integration tests": [
+      {
+        "executionId": "38cf6543-ccb4-460d-af4e-2bcd62cc69dd",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795453645751
+      },
+      {
+        "executionId": "38cf6543-ccb4-460d-af4e-2bcd62cc69dd",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795453939339
+      }
+    ],
+    "9. Checkpoint - Database layer": [
+      {
+        "executionId": "38cf6543-ccb4-460d-af4e-2bcd62cc69dd",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795453939391
+      },
+      {
+        "executionId": "38cf6543-ccb4-460d-af4e-2bcd62cc69dd",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795454538646
+      }
+    ],
+    "8. Implement the local database environment, migration system and Postgres adapters": [
+      {
+        "executionId": "38cf6543-ccb4-460d-af4e-2bcd62cc69dd",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795453939450
+      }
     ]
   }
 }

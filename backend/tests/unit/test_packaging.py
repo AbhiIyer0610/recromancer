@@ -21,9 +21,10 @@ def test_sql_file_is_found_through_importlib_resources() -> None:
     assert b"\r" not in data
 
 
-def test_discover_returns_the_single_initial_migration() -> None:
+def test_first_migration_is_the_initial_vector_extension() -> None:
     migrations = discover(files("recromancer.db") / "migrations")
-    assert [m.name for m in migrations] == [_NAME]
+    assert len(migrations) >= 1
+    assert migrations[0].name == _NAME
     assert migrations[0].sql == _EXPECTED.decode("utf-8")
     assert migrations[0].checksum == hashlib.sha256(_EXPECTED).hexdigest()
     assert len(migrations[0].checksum) == 64

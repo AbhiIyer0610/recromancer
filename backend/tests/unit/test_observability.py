@@ -676,3 +676,13 @@ def test_longer_encoded_form_containing_shorter_secret_is_replaced_first(
     structlog.get_logger("a").info(f"v {encoded} end {short}")
     assert _lines(log_stream)[0]["message"] == "v *** end ***"
     assert "pa%20ss" not in log_stream.getvalue()
+
+
+def test_redact_text_scrubs_all_forms_without_logging_configured() -> None:
+    secret = 'pw"x!yz AB9'
+    text = " | ".join(
+        [secret, json.dumps(secret)[1:-1], quote(secret, safe=""), "plain"]
+    )
+    cleaned = obs.redact_text(text, (secret, ""))
+    assert cleaned == "*** | *** | *** | plain"
+    assert obs.redact_text("nothing here", ()) == "nothing here"

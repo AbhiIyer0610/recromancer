@@ -70,6 +70,14 @@ class _State:
 _state: _State | None = None
 
 
+class _UnusedClock:
+    def now(self) -> datetime:  # pragma: no cover - never called by redact_text
+        raise RuntimeError("no clock")
+
+
+_UNUSED_CLOCK = _UnusedClock()
+
+
 def question_log_fields(text: str) -> dict[str, int]:
     """Return the only sanctioned way to refer to a question in a log entry."""
     return {"question_len": len(text)}
@@ -100,6 +108,15 @@ def _scrub(text: str, state: _State) -> str:
         if form in text:
             text = text.replace(form, REDACTED)
     return text
+
+
+def redact_text(text: str, secret_values: Iterable[str]) -> str:
+    """Replace every registered secret form in ``text`` with ``***``.
+
+    Uses the same forms (raw, JSON-escaped, percent-encoded) as the log redactor and
+    does not need logging to be configured.
+    """
+    return _scrub(text, _State(clock=_UNUSED_CLOCK, forms=_build_forms(secret_values)))
 
 
 def _safe_str(value: object) -> str:
@@ -345,4 +362,5 @@ __all__ = [
     "Clock",
     "configure_logging",
     "question_log_fields",
+    "redact_text",
 ]

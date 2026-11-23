@@ -165,7 +165,7 @@ Conventions that apply to every task:
 - [x] 7. Checkpoint - API layer
   - Ensure all tests pass, ask the user if questions arise. Run `cd backend; ruff check .; ruff format --check .; mypy; lint-imports; pytest` and confirm the coverage floor holds.
 
-- [ ] 8. Implement the local database environment, migration system and Postgres adapters
+- [x] 8. Implement the local database environment, migration system and Postgres adapters
   - [x] 8.0 Create `docker-compose.yml` and `.env.example`
     - `docker-compose.yml` at the repo root with service `db` using `pgvector/pgvector:pg16`, `POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB` all `recromancer`, port `"127.0.0.1:5432:5432"`, the named volume `recromancer-pgdata`, and a healthcheck `pg_isready -U recromancer -d recromancer` with `interval: 10s`, `timeout: 5s`, `retries: 5`.
     - `.env.example` with `RECROMANCER_` variables only, exactly those in the design (`PRODUCTION`, `DEMO_MODE`, `DATABASE_URL`, `ADMIN_TOKEN`, `ANTHROPIC_API_KEY`, `LOG_LEVEL`). Secret placeholders are blank or obviously non-secret text such as `change-me-local-only`, never a token-shaped value: `RECROMANCER_ADMIN_TOKEN` equals `ADMIN_TOKEN_PLACEHOLDER` (the design requires a test that they match, see task 11.5) and `RECROMANCER_ANTHROPIC_API_KEY` is blank (`RECROMANCER_ANTHROPIC_API_KEY=`), which `Settings` reads as unset (task 3.1).
@@ -192,12 +192,13 @@ Conventions that apply to every task:
     - _Requirements: 7.1, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 7.10, 7.11_
 
   - [x] 8.5 Create the migration strategy and its guard test
-    - Create `backend/tests/property/strategies.py` with `migration_sets()`: a composite producing 0 to 8 migrations with strictly increasing `NNNN_word.sql` names and SQL drawn from a safe alphabet that excludes `-` (so no comment can form), including blank files, plus `.filter(lambda sql: not sql.lstrip().startswith(FAIL_MARKER))` as a second guard; import `FAIL_MARKER` from `tests/fakes.py`.
-    - Create `backend/tests/unit/test_migration_strategy.py`: draw at least 100 examples and assert that no generated file starts with `-- fail` on its stripped text, names are valid and strictly increasing.
+    - Create `backend/tests/property/strategies.py` with `migration_sets()`: a composite producing 0 to 8 migrations with strictly increasing `NNNN_word.sql` names and SQL drawn from a safe alphabet that excludes `-` (so no comment can form), including blank files, plus `.filter(lambda sql: not sql.lstrip().startswith(FAIL_MARKER))` as a second guard; import `FAIL_MARKER` from `tests/fakes.py`. `strategies.py` also provides `migration_sets_with_failures()`, which always contains at least one non-blank file whose SQL starts with `FAIL_MARKER` (imported from `tests.fakes`), used only by the failing-run test.
+    - Create `backend/tests/unit/test_migration_strategy.py`: draw at least 100 examples and assert that no generated file starts with `-- fail` on its stripped text, names are valid and strictly increasing. The guard test also proves `migration_sets()` yields blank files, whitespace-only files, non-contiguous numbers and an empty set, and that every `migration_sets_with_failures()` example contains a failing file.
     - _Requirements: 10.1, 10.5, 10.6_
 
   - [x] 8.6 Write Property 4 for migration idempotency
     - Add `assert_same_state(a, b)` to `invariants.py` (executed-SQL history and recorded `_schema_migrations` contents, ignoring nothing else). Create `backend/tests/property/test_migration_properties.py::test_apply_twice_is_idempotent` running the runner twice on a fresh `FakeMigrationStore` with a `FakeClock`; assert the state after the second run equals the state after the first and the second report lists no applied files.
+    - Add `test_failed_run_twice_leaves_same_state` (uses `migration_sets_with_failures()`): two failed runs raise the same `MIGRATION_FAILED` error naming the same file and leave the same snapshot; the failing file and later files are never recorded.
     - **Property 4: Applying a migration set twice is idempotent**
     - **Validates: Requirements 7.5, 10.5**
 
@@ -206,21 +207,21 @@ Conventions that apply to every task:
     - **Property 5: Prefix-then-rest equals all-at-once**
     - **Validates: Requirements 10.6**
 
-  - [ ] 8.8 Implement the Postgres adapters in `db/postgres.py`
+  - [x] 8.8 Implement the Postgres adapters in `db/postgres.py`
     - Before writing, check the installed `psycopg` and `psycopg_pool` APIs against the design (`ConnectionPool(open=False)`, `pool.open(wait=False)`, `pool.connection(timeout=...)`, `conn.transaction()`, `LiteralString` typing for `execute`) and confirm in the psycopg documentation that the async pool is unsupported on the default Windows event loop, so the sync pool plus `anyio.to_thread` is used.
     - Implement `build_pool(database_url: SecretStr)`, `PostgresMigrationStore` (one autocommit connection; `pg_advisory_lock` with the key exposed as the module constant `MIGRATION_LOCK_KEY = int.from_bytes(hashlib.sha256(b"recromancer.migrations").digest()[:8], "big", signed=True)`, a signed 64-bit integer that always fits the Postgres bigint range; `pg_advisory_unlock` in `finally`; `ensure_table` creating `_schema_migrations (filename text primary key, checksum text not null, applied_at timestamptz not null)`; each migration and its record in one `with conn.transaction():`; multi-statement SQL executed with no parameters and one documented `cast(LiteralString, ...)`; `psycopg.Error` converted to `StoreError`; a validated `schema` argument for test isolation), `PostgresReadinessProbe` (`SELECT 1` through `anyio.to_thread.run_sync(..., abandon_on_cancel=True)` with `pool.connection(timeout=4.0)`) and `PostgresDiagnostics` (`ping`, `has_extension`). `psycopg` is imported only inside `db`; no import of `service` or another adapter.
     - Add `backend/tests/unit/test_migration_lock_key.py` (no database needed; importing the constant must not open a connection): assert `-2**63 <= MIGRATION_LOCK_KEY <= 2**63 - 1`, that it equals the expression above recomputed in the test, and that it is deterministic (the same value on repeated reads and after `importlib.reload` of the module).
     - _Requirements: 7.2, 7.3, 7.4, 7.8, 7.9, 5.14_
 
-  - [ ] 8.9 Implement the migrate CLI in `db/migrate.py`
-    - `main(argv, *, environ, store_factory, stdout, stderr, clock)` with all dependencies injectable, plus the `python -m recromancer.db.migrate` entry (`if __name__ == "__main__"`). Flow: `load_dotenv()`, `Settings.from_env()`, build the store, `discover` the packaged `migrations` directory via `importlib.resources.files("recromancer.db") / "migrations"`, `run`. Print one line per applied file, or a line containing `no migrations pending`; exit 0 on success. Exit 1 with a descriptive message on stderr (passed through the redactor seeded with `settings.secret_values()`) on `ConfigError`, connection failure, missing directory or `MigrationError`. Only `db/migrate.py` may import `config` within `db`; confirm `lint-imports` still passes (adjust C7 or add an explicit allowance only if the installed version flags it, and record why).
+  - [x] 8.9 Implement the migrate CLI in `db/migrate.py`
+    - `main(argv, *, environ, store_factory, stdout, stderr, clock)` with all dependencies injectable, plus the `python -m recromancer.db.migrate` entry (`if __name__ == "__main__"`). Flow: `load_dotenv()`, `Settings.from_env()`, build the store, `discover` the packaged `migrations` directory via `importlib.resources.files("recromancer.db") / "migrations"`, `run`. Print one line per applied file, or a line containing `no migrations pending`; exit 0 on success. Exit 1 with a descriptive message on stderr (passed through the redactor seeded with `settings.secret_values()`) on `ConfigError`, connection failure, missing directory or `MigrationError`; any `StoreError` raised outside `apply` (while taking the lock, in `ensure_table` or in `applied`) is also caught by the CLI and printed as a clean stderr message with exit code 1. Only `db/migrate.py` may import `config` within `db`; confirm `lint-imports` still passes (adjust C7 or add an explicit allowance only if the installed version flags it, and record why).
     - _Requirements: 7.12, 7.13, 7.14, 3.16_
 
-  - [ ] 8.10 Write CLI unit tests
+  - [x] 8.10 Write CLI unit tests
     - Extend `backend/tests/unit/test_runner.py` (or add `test_migrate_cli.py` if the file grows unwieldy) with `main` driven by fakes: exit 0 and the line `no migrations pending` when nothing is pending, one line per applied file, exit 1 with a descriptive stderr message for `ConfigError`, connection failure, missing directory and `MigrationError`, and that stderr never contains the database password or admin token.
     - _Requirements: 7.12, 7.13, 7.14_
 
-  - [ ] 8.11 Add the database-URL fixture, contract tests and integration tests
+  - [x] 8.11 Add the database-URL fixture, contract tests and integration tests
     - All database integration and contract tests in this task run against the compose database from task 8.0, with `RECROMANCER_DATABASE_URL` pointing at it, and still skip with the stated reason when the variable is unset.
     - In `backend/tests/conftest.py` add a `postgres_url` fixture that reads `RECROMANCER_DATABASE_URL` from the real environment through `config.read_environment()` (never `os.environ`, never `.env`) and calls `pytest.skip("no database URL configured (set RECROMANCER_DATABASE_URL)")` when it is absent; add a throwaway-schema fixture (`CREATE SCHEMA t_<hex>`, dropped afterwards).
     - Create `backend/tests/contract/test_migration_store_contract.py`: one suite (`ensure_table` idempotent, `applied` reflects `apply`, failing SQL records nothing, lock exclusive within a process) parametrised over `FakeMigrationStore` and `PostgresMigrationStore`, with a `failing_sql` fixture (`-- fail` for the fake, `SELECT 1/0;` for Postgres); the Postgres parameter skips with the reason above.
@@ -228,7 +229,7 @@ Conventions that apply to every task:
     - Run the suite both without and with `docker compose up -d` and `$env:RECROMANCER_DATABASE_URL="postgresql://recromancer:recromancer@localhost:5432/recromancer"` (the compose file from task 8.0; if Docker is unavailable, confirm the skip path only and state why) and confirm the coverage floor holds. If the floor fails only when the database is absent, keep the adapter thin and report it as design risk 1; do not lower `fail_under` and do not add `# pragma: no cover` without telling the user.
     - _Requirements: 10.1, 10.7, 10.9, 10.10, 7.3, 7.4, 7.8, 7.9_
 
-- [ ] 9. Checkpoint - Database layer
+- [x] 9. Checkpoint - Database layer
   - Ensure all tests pass, ask the user if questions arise. Run `cd backend; ruff check .; ruff format --check .; mypy; lint-imports; pytest`.
 
 - [ ] 10. Wire the Composition Root

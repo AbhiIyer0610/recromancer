@@ -1187,7 +1187,9 @@ Notes:
   generated file would randomly fail and break the idempotency and prefix properties). SQL is built
   from a safe alphabet that excludes `-` (so no SQL comment can be formed), with a `.filter` on
   `not sql.lstrip().startswith(FAIL_MARKER)` as a second guard. `FAIL_MARKER = "-- fail"` is
-  defined once in the fake store module and imported by the strategy.
+  defined once in the fake store module and imported by the strategy. A second strategy,
+  `migration_sets_with_failures()`, deliberately includes one such file and is used only by the
+  failing-run test that complements Property 4.
 - Migration sets are generated with strictly increasing names, and the prefix-then-rest run in
   Property 5 only ever adds higher-numbered files, so the out-of-order pre-flight (R7.7) never
   fires inside the properties. Blank files are exempt from that pre-flight and never recorded, so
@@ -1208,7 +1210,7 @@ Notes:
 | `test_redaction_keys.py` | R5.7: `is_sensitive_key` redacts `apikey`, `apiKey`, `API_KEY`, `api_key`, `accesskey`, `privatekey`, `signingkey`, `authkey`, `accesstoken`, `db_password`, `admin_token`, `authorization`, `session_cookie`; does not redact `monkey`, `keyboard`, `input_tokens`, `output_tokens`, `max_tokens` (none of the five compound substrings occurs in these names); hyphen and upper-case variants behave the same |
 | `test_doctor_masking.py` | R6.10, R6.11: `is_masked_env_name` is true for `RECROMANCER_ADMIN_TOKEN`, `RECROMANCER_ANTHROPIC_API_KEY`, `MONKEY`, `MAX_TOKENS` and a lower-case name such as `db_password`; false for `RECROMANCER_DATABASE_URL`, which the rendering code prints as host and port only; a rendered line for a masked name never contains the value; R6.6: a blank `RECROMANCER_ANTHROPIC_API_KEY` yields an OK line with `***`, and a variable absent from both the environment and `.env` yields FAIL |
 | `test_docs_disabled_in_production.py` | Production attack surface: with `production=True`, `GET /docs`, `/redoc` and `/openapi.json` return 404 with code `NOT_FOUND` and the standard body; with `production=False` all three return 200 |
-| `test_migration_strategy.py` | `migration_sets()` output never starts with `-- fail` (checked on the stripped text of every generated file, 100+ examples) |
+| `test_migration_strategy.py` | `migration_sets()` output never starts with `-- fail` (checked on the stripped text of every generated file, 100+ examples); blank files, whitespace-only files, non-contiguous numbers and the empty set all occur; every `migration_sets_with_failures()` example contains a failing file |
 | `test_observability.py` | R5.1 to 5.2, 5.5, 5.7 to 5.9: required fields, context binding, redaction, `question_log_fields` |
 | `test_health.py` | R5.10 to 5.13: `/healthz` calls no probe; `/readyz` ready, not ready, raising, hanging with `readyz_timeout_s=0.05` |
 | `test_runner.py` | R7: discovery rules, pre-flight checksum mismatch (R7.6), out-of-order non-blank pending file (R7.7: with the fake store, record `0003`, offer pending `0002`, assert `MIGRATION_FAILED` naming `0002`, nothing applied and the store unchanged; a pending file above the highest applied number still applies), blank file `0002` with `0003` recorded (R7.11: no exception, warning naming `0002`, store unchanged, and a second identical run also succeeds), the same `0002` later filled with SQL (R7.7: `MIGRATION_FAILED` naming `0002`, nothing applied), empty file warning, error wrapping, CLI `main` exit codes and messages |

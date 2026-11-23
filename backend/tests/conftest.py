@@ -11,6 +11,7 @@ from hypothesis import settings
 from recromancer import config
 from recromancer import observability as obs
 from tests.fakes_api import FakeClock
+from tests.pg_support import throwaway_schema
 
 settings.register_profile("default", max_examples=100, deadline=None)
 settings.register_profile("ci", max_examples=1000, deadline=None)
@@ -20,6 +21,22 @@ settings.load_profile(config.read_environment().get("HYPOTHESIS_PROFILE", "defau
 @pytest.fixture
 def anyio_backend() -> str:
     return "asyncio"
+
+
+@pytest.fixture
+def postgres_url() -> str:
+    """Database URL from the real process environment, or skip the test."""
+    url = config.read_environment().get("RECROMANCER_DATABASE_URL", "").strip()
+    if not url:
+        pytest.skip("no database URL configured (set RECROMANCER_DATABASE_URL)")
+    return url
+
+
+@pytest.fixture
+def pg_schema(postgres_url: str) -> Iterator[str]:
+    """A throwaway schema ``t_<hex>``, dropped with CASCADE afterwards."""
+    with throwaway_schema(postgres_url) as name:
+        yield name
 
 
 @pytest.fixture
