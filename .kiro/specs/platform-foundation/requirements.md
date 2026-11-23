@@ -101,7 +101,7 @@ logs or error output.
 5. THE Settings SHALL store all secret fields (database password, admin token, API keys) as `pydantic.SecretStr`.
 6. IF validation fails while loading Settings, THEN THE Settings SHALL raise a ConfigError whose message lists only the failing field names and expected types, and SHALL set `hide_input_in_errors=True` so that no input value appears in the message.
 7. THE Settings SHALL include a boolean `demo_mode` field that defaults to `True` and a boolean `production` field that defaults to `False`.
-8. THE Settings SHALL provide a `database_url` field of type `SecretStr` with a default value of `postgresql://recromancer:recromancer@localhost:5432/recromancer` for local development.
+8. THE Settings SHALL provide a `database_url` field of type `SecretStr` with a default value of `postgresql://recromancer:recromancer@127.0.0.1:5432/recromancer` for local development.
 9. WHILE `production` is `True`, THE Settings SHALL require `database_url` to be set explicitly and SHALL reject a `database_url` equal to the local default value.
 10. WHILE `production` is `True` and `demo_mode` is `False`, THE Settings SHALL require `admin_token` to be set, to be at least 32 characters long, and to differ from the placeholder value used for the admin token in `.env.example`; a violation SHALL be reported by a ConfigError that names the `admin_token` field and never its value.
 11. IF more than one cross-field production rule is violated, THEN THE Settings SHALL raise a single ConfigError that names all conflicting fields.
@@ -207,6 +207,7 @@ same schema state without depending on a heavy migration framework.
 13. IF the database connection fails or the migrations directory is missing, THEN THE Migration_Runner SHALL print a descriptive error and exit with code 1.
 14. WHEN the Migration_Runner is run and no migrations are pending, THE Migration_Runner SHALL print a message containing `no migrations pending` and exit with code 0.
 15. THE initial migration file SHALL be named `0001_create_vector_extension.sql` and SHALL contain `CREATE EXTENSION IF NOT EXISTS vector;`.
+16. IF a migration file starts with a UTF-8 byte order mark or cannot be decoded as UTF-8, THEN THE Migration_Runner SHALL reject it with a MigrationError that names the file and contains no decoder details.
 
 ---
 

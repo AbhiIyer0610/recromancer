@@ -174,9 +174,9 @@ Conventions that apply to every task:
 
   - [x] 8.1 Implement `db/runner.py`
     - Define `Migration` (frozen: `name`, `sql`, `checksum`), `RunReport(applied, skipped, empty)`, `StoreError`, `MigrationError(RecromancerError)` with `ErrorCode.MIGRATION_FAILED`, the `MigrationStore` protocol (`locked`, `ensure_table`, `applied`, `apply`), `discover(directory: Traversable)` and `run(store, migrations, clock, warn)`. Do not import `psycopg`, `service` or any other adapter; type the clock with a small local protocol.
-    - `discover`: names matching `[0-9]{4}_[a-z0-9_]+\.sql`, sorted by filename; error for a missing directory, a `.sql` file with a non-matching name, and duplicate numeric prefixes; non-`.sql` files ignored; SHA-256 over file bytes.
+    - `discover`: names matching `[0-9]{4}_[a-z0-9_]+\.sql`, sorted by filename; error for a missing directory, a `.sql` file with a non-matching name, and duplicate numeric prefixes; non-`.sql` files ignored; SHA-256 over file bytes; a file starting with a UTF-8 BOM or not valid UTF-8 raises `MigrationError` naming the file (no decoder text).
     - `run`: acquire the lock, `ensure_table` under it, pre-flight 1 (checksum mismatch names the file) and pre-flight 2 (a NON-blank pending file numbered below the highest recorded number raises `MIGRATION_FAILED` naming the file), both before the first `apply`; skip recorded files; blank files are skipped with a warning naming them, are never recorded and are exempt from pre-flight 2; apply the rest in order with `applied_at` from the injected clock; wrap `StoreError` as `MigrationError` with `"<filename>: <original message>"` truncated to 500 characters; forward-only, no down path.
-    - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 7.10, 7.11_
+    - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 7.10, 7.11, 7.16_
 
   - [x] 8.2 Create the in-memory `FakeMigrationStore`
     - Create `backend/tests/fakes.py` with `FAIL_MARKER = "-- fail"` defined once and `FakeMigrationStore` modelling the executed SQL history as an ordered tuple and the recorded set as a dict `filename -> (checksum, applied_at)`, changed together; `apply` raises `StoreError` when the SQL starts with `FAIL_MARKER` and records nothing; `locked` is a context manager that tracks exclusivity; also a deterministic `FakeClock`.
@@ -184,7 +184,7 @@ Conventions that apply to every task:
 
   - [x] 8.3 Add the initial migration, `.gitattributes` and packaging test
     - Create `backend/src/recromancer/db/migrations/0001_create_vector_extension.sql` containing exactly `CREATE EXTENSION IF NOT EXISTS vector;`. Create the repo-root `.gitattributes` with `*.sql text eol=lf` and `*.py text eol=lf`. Check that `.gitignore` ignores neither `.sql` files, `py.typed` nor any `.kiro/` path.
-    - Create `backend/tests/unit/test_packaging.py`: `importlib.resources` finds the `.sql` file in the package, its text equals the required statement, and the pyproject wheel target lists `src/recromancer`. Confirm with `pip wheel --no-deps backend -w $env:TEMP\wheelcheck` that the wheel contains the `.sql` file and `py.typed`, then delete the temporary directory.
+    - Create `backend/tests/unit/test_packaging.py`: `importlib.resources` finds the `.sql` file in the package, its text equals the required statement, and the pyproject wheel target lists `src/recromancer`. Confirm with `pip wheel --no-deps ./backend -w $env:TEMP\wheelcheck` that the wheel contains the `.sql` file and `py.typed`, then delete the temporary directory.
     - _Requirements: 7.1, 7.15, 1.1, 1.4_
 
   - [x] 8.4 Write runner unit tests `test_runner.py`
@@ -226,23 +226,23 @@ Conventions that apply to every task:
     - In `backend/tests/conftest.py` add a `postgres_url` fixture that reads `RECROMANCER_DATABASE_URL` from the real environment through `config.read_environment()` (never `os.environ`, never `.env`) and calls `pytest.skip("no database URL configured (set RECROMANCER_DATABASE_URL)")` when it is absent; add a throwaway-schema fixture (`CREATE SCHEMA t_<hex>`, dropped afterwards).
     - Create `backend/tests/contract/test_migration_store_contract.py`: one suite (`ensure_table` idempotent, `applied` reflects `apply`, failing SQL records nothing, lock exclusive within a process) parametrised over `FakeMigrationStore` and `PostgresMigrationStore`, with a `failing_sql` fixture (`-- fail` for the fake, `SELECT 1/0;` for Postgres); the Postgres parameter skips with the reason above.
     - Create `backend/tests/integration/test_postgres_migrations.py` and `test_postgres_probe.py`: real `0001` applies and the `vector` extension exists; a second run reports `no migrations pending`; a second connection's `pg_try_advisory_lock` fails while the runner holds the lock; a failing migration leaves neither its effects nor a record; applying twice and prefix-then-rest equivalence on real Postgres as example tests; `PostgresReadinessProbe` returns true. All skip with the reason above when no URL is set.
-    - Run the suite both without and with `docker compose up -d` and `$env:RECROMANCER_DATABASE_URL="postgresql://recromancer:recromancer@localhost:5432/recromancer"` (the compose file from task 8.0; if Docker is unavailable, confirm the skip path only and state why) and confirm the coverage floor holds. If the floor fails only when the database is absent, keep the adapter thin and report it as design risk 1; do not lower `fail_under` and do not add `# pragma: no cover` without telling the user.
+    - Run the suite both without and with `docker compose up -d` and `$env:RECROMANCER_DATABASE_URL="postgresql://recromancer:recromancer@127.0.0.1:5432/recromancer"` (the compose file from task 8.0; if Docker is unavailable, confirm the skip path only and state why) and confirm the coverage floor holds. If the floor fails only when the database is absent, keep the adapter thin and report it as design risk 1; do not lower `fail_under` and do not add `# pragma: no cover` without telling the user.
     - _Requirements: 10.1, 10.7, 10.9, 10.10, 7.3, 7.4, 7.8, 7.9_
 
 - [x] 9. Checkpoint - Database layer
   - Ensure all tests pass, ask the user if questions arise. Run `cd backend; ruff check .; ruff format --check .; mypy; lint-imports; pytest`.
 
-- [ ] 10. Wire the Composition Root
-  - [ ] 10.1 Implement `bootstrap.py`
+- [x] 10. Wire the Composition Root
+  - [x] 10.1 Implement `bootstrap.py`
     - Replace the stub (if any). Define `SystemClock`, `uuid4_str`, `pool_lifespan(pool)` (`pool.open(wait=False)` on startup, `pool.close()` on shutdown), `build_app(settings, *, clock=None)` (configure logging with `settings.secret_values()`, `build_pool`, assign `PostgresReadinessProbe` to a `ReadinessProbe`-typed variable so mypy checks the fit, call `create_app` with `demo_mode` and `production` from settings), `app_factory()` (`load_dotenv()` then `Settings.from_env()`; used as `uvicorn recromancer.bootstrap:app_factory --factory`) and `build_db_diagnostics(settings)` returning a `PostgresDiagnostics`. `bootstrap.py` is the only module that imports `db`, `llm`, `embed` or `retrieval`; confirm `lint-imports` passes.
     - _Requirements: 2.4, 2.6, 5.14, 3.16_
 
-  - [ ] 10.2 Write composition-root tests
+  - [x] 10.2 Write composition-root tests
     - Create `backend/tests/unit/test_bootstrap.py`: `build_app` with injected settings and a fake clock constructs the app without opening the pool or touching the network; `GET /healthz` returns 200 through `TestClient` without entering the lifespan; the app disables docs when `production=True`; `build_db_diagnostics` returns an object satisfying `DbDiagnostics`; `pool_lifespan` calls `open(wait=False)` then `close()` on a fake pool.
     - _Requirements: 2.4, 5.10, 5.14_
 
 - [ ] 11. Add the local development environment and Doctor
-  - [ ] 11.1 Check `.gitignore` for the environment files
+  - [x] 11.1 Check `.gitignore` for the environment files
     - `docker-compose.yml` and `.env.example` already exist (task 8.0). Check that `.gitignore` ignores `.env` and does not ignore `.env.example` or `docker-compose.yml`, and fix `.gitignore` if needed (`git check-ignore -q .env` succeeds; `git check-ignore -q .env.example` fails).
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
@@ -276,7 +276,7 @@ Conventions that apply to every task:
 
 - [ ] 13. Add continuous integration
   - [ ] 13.1 Create `.github/workflows/ci.yml`
-    - Triggers `push` (all branches) and `pull_request`; `concurrency` keyed on the ref; workflow-level `permissions: contents: read`; all jobs on `ubuntu-latest` with Python 3.11. Jobs: `lint` (`ruff check .` in `backend`, plus `ruff check --config backend/pyproject.toml scripts`), `format` (`ruff format --check` for both), `typecheck` (`mypy`), `tests` (`pytest` with `HYPOTHESIS_PROFILE=ci`, a `pgvector/pgvector:pg16` service with the three `POSTGRES_*` variables, port `5432:5432`, `--health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5`, `RECROMANCER_DATABASE_URL` set to the container URL, then a step that builds a wheel with `pip wheel --no-deps backend` and fails if the archive lacks the `.sql` file or `py.typed`), `secret-scan`, `kiro-guard`, `import-linter` (`lint-imports` in `backend`), the optional `frontend` job guarded by a `detect` step (not in the gate), and `gate` (`if: always()`, `needs` the seven required jobs, fails on `failure`, `cancelled` or `skipped`).
+    - Triggers `push` (all branches) and `pull_request`; `concurrency` keyed on the ref; workflow-level `permissions: contents: read`; all jobs on `ubuntu-latest` with Python 3.11. Jobs: `lint` (`ruff check .` in `backend`, plus `ruff check --config backend/pyproject.toml scripts`), `format` (`ruff format --check` for both), `typecheck` (`mypy`), `tests` (`pytest` with `HYPOTHESIS_PROFILE=ci`, a `pgvector/pgvector:pg16` service with the three `POSTGRES_*` variables, port `5432:5432`, `--health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5`, `RECROMANCER_DATABASE_URL` set to the container URL, then a step that builds a wheel with `pip wheel --no-deps ./backend` and fails if the archive lacks the `.sql` file or `py.typed`), `secret-scan`, `kiro-guard`, `import-linter` (`lint-imports` in `backend`), the optional `frontend` job guarded by a `detect` step (not in the gate), and `gate` (`if: always()`, `needs` the seven required jobs, fails on `failure`, `cancelled` or `skipped`).
     - `kiro-guard` runs `git check-ignore -q` on `.kiro/steering/product.md`, `.kiro/specs/example/requirements.md`, `.kiro/hooks/example.json` and `.kiro/settings/mcp.json`, fails with an explanatory message if any is ignored, and also fails if `git ls-files .kiro` is empty. Run the same loop locally in PowerShell to confirm it passes.
     - Action versions: look up the exact current release and commit SHA of `actions/checkout` and `actions/setup-python` (and any other third-party action) on each action's releases page or via the GitHub API before writing the file; pin by full commit SHA or an exact version tag with a comment recording the version. Never use a floating tag such as `v4` or `main` and never guess a SHA. Use `actions/setup-python` with `cache: pip` and `cache-dependency-path: backend/pyproject.toml`.
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 8.10, 8.11, 8.12, 2.9_
@@ -305,7 +305,7 @@ Conventions that apply to every task:
     - `ruff check --config backend/pyproject.toml scripts; ruff format --check --config backend/pyproject.toml scripts`
     - `cd backend; mypy`
     - `cd backend; lint-imports`
-    - `cd backend; pytest` (coverage at least 85 percent), then with the database: `docker compose up -d` and `$env:RECROMANCER_DATABASE_URL="postgresql://recromancer:recromancer@localhost:5432/recromancer"; cd backend; pytest`
+    - `cd backend; pytest` (coverage at least 85 percent), then with the database: `docker compose up -d` and `$env:RECROMANCER_DATABASE_URL="postgresql://recromancer:recromancer@127.0.0.1:5432/recromancer"; cd backend; pytest`
     - `$env:HYPOTHESIS_PROFILE="ci"; cd backend; pytest`
     - `python scripts/secret_scan.py`
     - `python scripts/doctor.py` (after `Copy-Item .env.example .env`, `docker compose up -d` and `cd backend; python -m recromancer.db.migrate`)

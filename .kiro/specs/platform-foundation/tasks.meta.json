@@ -543,6 +543,59 @@
         "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
         "timestamp": 1795453939450
       }
+    ],
+    "10.1 Implement `bootstrap.py`": [
+      {
+        "executionId": "d9c69fd2-2bf9-4c36-93ca-d42acb28ef86",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795456536871
+      },
+      {
+        "executionId": "d9c69fd2-2bf9-4c36-93ca-d42acb28ef86",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795456769695
+      }
+    ],
+    "10.2 Write composition-root tests": [
+      {
+        "executionId": "d9c69fd2-2bf9-4c36-93ca-d42acb28ef86",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795456770187
+      },
+      {
+        "executionId": "d9c69fd2-2bf9-4c36-93ca-d42acb28ef86",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795456790160
+      },
+      {
+        "executionId": "d9c69fd2-2bf9-4c36-93ca-d42acb28ef86",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795456987453
+      },
+      {
+        "executionId": "d9c69fd2-2bf9-4c36-93ca-d42acb28ef86",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795457206866
+      }
+    ],
+    "10. Wire the Composition Root": [
+      {
+        "executionId": "d9c69fd2-2bf9-4c36-93ca-d42acb28ef86",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795456790224
+      }
+    ],
+    "11.1 Check `.gitignore` for the environment files": [
+      {
+        "executionId": "d9c69fd2-2bf9-4c36-93ca-d42acb28ef86",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795456791125
+      },
+      {
+        "executionId": "d9c69fd2-2bf9-4c36-93ca-d42acb28ef86",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795456791543
+      }
     ]
   }
 }

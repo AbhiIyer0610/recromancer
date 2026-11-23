@@ -260,7 +260,7 @@ def test_log_safe_summary_defaults() -> None:
     assert summary == {
         "production": False,
         "demo_mode": True,
-        "database_url": "localhost:5432",
+        "database_url": "127.0.0.1:5432",
         "admin_token": "***",
         "anthropic_api_key": "***",
         "log_level": "INFO",

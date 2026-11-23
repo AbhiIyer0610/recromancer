@@ -22,7 +22,7 @@ from pydantic_settings import (
 from recromancer.domain.errors import ErrorCode, RecromancerError
 
 ENV_PREFIX = "RECROMANCER_"
-DEFAULT_DATABASE_URL = "postgresql://recromancer:recromancer@localhost:5432/recromancer"
+DEFAULT_DATABASE_URL = "postgresql://recromancer:recromancer@127.0.0.1:5432/recromancer"
 ADMIN_TOKEN_PLACEHOLDER = "change-me-local-only"
 MIN_ADMIN_TOKEN_LENGTH = 32
 MIN_REDACTED_SECRET_LENGTH = 8

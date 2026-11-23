@@ -740,7 +740,9 @@ Details:
 - **Discovery.** `discover(directory: Traversable) -> tuple[Migration, ...]` reads names matching
   `[0-9]{4}_[a-z0-9_]+\.sql`, sorted by filename. It raises `MigrationError` for a missing directory,
   for a `.sql` file with a non-matching name, and for duplicate numeric prefixes. Non-`.sql` files
-  are ignored. The default directory is `importlib.resources.files("recromancer.db") / "migrations"`,
+  are ignored. A file starting with a UTF-8 BOM, or one that is not valid UTF-8, is rejected with a
+  `MigrationError` naming the file (no decoder text), because the checksum is over the bytes and
+  the decoded SQL must agree with them (R7.16). The default directory is `importlib.resources.files("recromancer.db") / "migrations"`,
   which works from an editable install and from a wheel.
 - **Error wrapping.** The store converts `psycopg.Error` into a plain `StoreError(message)` so the
   runner never imports psycopg. The runner raises `MigrationError(MIGRATION_FAILED)` with
@@ -777,8 +779,9 @@ without extra configuration. Nothing in `.gitignore` matches them. Two checks pr
 
 - a unit test asserts `importlib.resources` finds `0001_create_vector_extension.sql` and that the
   pyproject wheel target lists `src/recromancer`;
-- a CI step builds a wheel with `pip wheel --no-deps backend` and fails if the archive lacks the
-  `.sql` file or `py.typed`.
+- a CI step builds a wheel with `pip wheel --no-deps ./backend` and fails if the archive lacks the
+  `.sql` file or `py.typed`. The path is written `./backend` because pip resolves a bare `backend`
+  as a package name on PyPI, not as the local directory.
 
 ### `pyproject.toml` highlights
 
@@ -837,11 +840,13 @@ credentials and the Settings default URL agree.
 # Copy to .env. Never commit .env. Placeholders only.
 RECROMANCER_PRODUCTION=false
 RECROMANCER_DEMO_MODE=true
-RECROMANCER_DATABASE_URL=postgresql://recromancer:recromancer@localhost:5432/recromancer
+RECROMANCER_DATABASE_URL=postgresql://recromancer:recromancer@127.0.0.1:5432/recromancer
 RECROMANCER_ADMIN_TOKEN=change-me-local-only
 RECROMANCER_ANTHROPIC_API_KEY=
 RECROMANCER_LOG_LEVEL=INFO
 ```
+
+The local URL uses `127.0.0.1`, not `localhost`: on Windows `localhost` resolves to `::1` first and Docker Desktop does not answer there, so every connection waits the full `connect_timeout` (measured: 10.0 s for `localhost`, 0.01 s for `127.0.0.1`) before falling back.
 
 Secret placeholders are blank or obviously non-secret text, never token-shaped values, so the
 secret scanner (which scans `.env.example`) does not flag the file. A blank
@@ -939,7 +944,7 @@ Other points:
 - **Postgres service.** `image: pgvector/pgvector:pg16`, the three `POSTGRES_*` variables, port
   `5432:5432`, and `--health-cmd pg_isready --health-interval 10s --health-timeout 5s
   --health-retries 5` so steps start only once it is ready. The job passes
-  `postgresql://recromancer:recromancer@localhost:5432/recromancer` as `RECROMANCER_DATABASE_URL`.
+  `postgresql://recromancer:recromancer@127.0.0.1:5432/recromancer` as `RECROMANCER_DATABASE_URL`.
 - **Kiro guard.** Checks a fixed list of representative paths (`.kiro/steering/product.md`,
   `.kiro/specs/example/requirements.md`, `.kiro/hooks/example.json`, `.kiro/settings/mcp.json`)
   with `git check-ignore -q`. Exit 0 means ignored, so the step fails with an explanatory
@@ -1232,7 +1237,7 @@ conftest does not load `.env`, so a developer opts in explicitly:
 
 ```powershell
 docker compose up -d
-$env:RECROMANCER_DATABASE_URL="postgresql://recromancer:recromancer@localhost:5432/recromancer"
+$env:RECROMANCER_DATABASE_URL="postgresql://recromancer:recromancer@127.0.0.1:5432/recromancer"
 cd backend; pytest tests/integration tests/contract
 ```
 
