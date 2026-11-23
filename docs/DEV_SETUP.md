@@ -23,10 +23,10 @@ Versions are minimums; newer is fine unless noted.
 
 Use Docker for Postgres, because pgvector is the awkward part to install natively (especially on Windows).
 We will add a `docker-compose.yml` using a Postgres image that includes pgvector. You then connect pgAdmin to
-`localhost` on the port we configure. If you prefer a native Postgres install, you must also install the
+`127.0.0.1` on the port we configure. If you prefer a native Postgres install, you must also install the
 `pgvector` extension for your Postgres version and run `CREATE EXTENSION vector;`.
 
-pgAdmin setup once the container runs: Add New Server, host `localhost`, port from compose,
+pgAdmin setup once the container runs: Add New Server, host `127.0.0.1`, port from compose,
 user and password from your `.env`.
 
 ## Accounts and keys (create now, store only in `.env`, never commit)
