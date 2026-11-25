@@ -8,9 +8,10 @@ access violation. The venv's base interpreter is miniconda Python 3.11.4 (`sys.b
 Windows loads that old copy first, and onnxruntime 1.32.0 (pulled in by fastembed 0.9.1) needs the
 newer C++ runtime. Details and the measured output are under Verification findings, V0.
 
-Proposed fix (needs the user's approval, open question 1): recreate `.venv` from a python.org CPython
-(3.11 to match CI, or the already installed 3.14) instead of miniconda. No code change, keeps
-fastembed. This blocks only the embed tasks (walking skeleton step 6). Chunking, the bundle reader,
+Decision (question 1, resolved): the user rebuilds `.venv` themselves from a python.org CPython 3.11
+(CI parity) instead of miniconda. No code change, keeps fastembed. The rebuild is a prerequisite of
+the real-model work (walking skeleton step 6), verified by `python -c "import onnxruntime"` exiting 0
+from `backend/` with the venv active. This blocks only the embed tasks (walking skeleton step 6). Chunking, the bundle reader,
 the Fake_Embedder, the in-memory store, the Postgres store and the CLI with fakes do not need
 onnxruntime. Because an import crash cannot be caught, no module imports `fastembed` at module
 level (see Embed adapter).
@@ -41,12 +42,12 @@ Design principles for this spec:
 
 | Requirement | Covered in |
 |---|---|
-| R1 Bundle format | Bundle_Reader; Data Models; Algorithms A1, A2; P4, P7 |
+| R1 Bundle format | Bundle_Reader; Data Models; Algorithms A1, A2; P3, EX-VIOLATIONS |
 | R2 Ledgerline bundle | Ledgerline fixture; Testing Strategy |
-| R3 Chunking | Chunker; Algorithm A3; P1, P2, P3 |
+| R3 Chunking | Chunker; Algorithm A3; P1, P2, EX-PARAMS |
 | R4 Embedder | Embed adapter; Fake_Embedder; Verification findings V1 |
 | R5 Storage | Migration 0002; Postgres store; Evidence_Store contract suite |
-| R6 Ingestion service | IngestionService; Algorithm A4; P5, P6 |
+| R6 Ingestion service | IngestionService; Algorithm A4; P4, EX-REINGEST |
 | R7 CLI | Ingest_CLI; Error Handling |
 | R8 Verification | Correctness Properties; Testing Strategy |
 
@@ -70,15 +71,14 @@ Miniconda:    msvcp140.dll 14.29.30153.0   vcruntime140.dll 14.29.30153.0
 
 Diagnosis confirmed: preloading the system copy first
 (`ctypes.WinDLL(r'C:\Windows\System32\msvcp140.dll'); import onnxruntime`) printed
-`onnxruntime ok 1.32.0`, exit 0. Alternative confirmed: a throwaway venv from python.org
+`onnxruntime ok 1.32.0`, exit 0. Second confirmation, evidence only (the chosen fix is a 3.11 venv): a throwaway venv from python.org
 `C:\Python314\python.exe` (the only non-conda Python; `py -0p` lists only
 `-V:3.14 * C:\Python314\python.exe`) printed `python 3.14.7 onnxruntime ok 1.32.0`, exit 0. The
 throwaway venv was deleted.
 
 | Option | Verdict |
 |---|---|
-| Recreate `.venv` from python.org CPython (default) | Zero code change, keeps fastembed. Needs the user's approval and a reinstall |
-| Preload System32 `msvcp140.dll` in the adapter | Rejected: Windows-only DLL hack in product code that hides an environment fault |
+| Recreate `.venv` from python.org CPython 3.11 (chosen, done by the user) | Zero code change, keeps fastembed, matches CI |
 | Pin an older onnxruntime | Rejected: unverified which release works with MSVC 14.29; fragile |
 | Switch to sentence-transformers and torch | Rejected: far larger dependency |
 
@@ -129,7 +129,7 @@ Consequences the design takes from V1:
 - **First run exceeds 60 s** (64.3 s measured). DEV_SETUP documents it as a one-time command and the
   optional real-model test runs only when the cache already exists.
 - **Cache location risk.** `%TEMP%` can be cleaned by Windows. DEV_SETUP recommends a stable
-  `RECROMANCER_EMBEDDING_CACHE_DIR` (open question 3).
+  `RECROMANCER_EMBEDDING_CACHE_DIR`, example `C:\Users\<you>\.cache\recromancer` (decision 3).
 - **Normalisation.** The library already returns unit vectors. The adapter still checks the norm and
   re-normalises when it is off by more than 1e-4, so a library change cannot break R4.13.
 - **Noise on Windows.** huggingface_hub warns about unsupported symlinks (Developer Mode off) and about
@@ -649,7 +649,7 @@ Details:
 - Type checks use `type(v) is int` for integers so JSON `true` is not accepted as `1`.
 - Text fields (`title`, `body`, Markdown): normalise `\r\n` then `\r` to `\n`, then check length, then
   require that `s.encode("utf-8")` succeeds and `"\x00" not in s` (a lone surrogate cannot be hashed or
-  stored and Postgres `text` cannot hold NUL; open question 11).
+  stored and Postgres `text` cannot hold NUL; decision 11).
 - `timestamp`: must `re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z")` and parse
   with `datetime.strptime(..., "%Y-%m-%dT%H:%M:%SZ")`; a parse failure is a field violation.
 - `url`: `urlsplit` scheme is `https` and `hostname` is non-empty. `path`: non-empty, no leading `/`, no
@@ -744,7 +744,9 @@ if abs(norm - 1.0) > 1e-4: v = [x / norm for x in v]
 system-essentially, a formal statement about what the system should do. Properties serve as the bridge
 between human-readable specifications and machine-verifiable correctness guarantees.*
 
-PBT applies to the pure parts (chunking, hashing, validation, the ingestion loop over in-memory fakes).
+PBT applies to four pure behaviours: chunk coverage, chunk ids, the content hash and ingestion
+idempotency over in-memory fakes. Invalid chunk parameters, edited-bundle re-ingest and the R1
+violation rules are example tests (EX-PARAMS, EX-REINGEST, EX-VIOLATIONS, below).
 It does not apply to the Postgres adapter, the fastembed adapter, the migration, the CLI wiring or the
 fixture content; those use example, contract and integration tests. Each property is one Hypothesis
 test with at least 100 examples (the repo's `default` profile; `ci` uses 1000) and a comment
@@ -754,9 +756,9 @@ Shared generator rules (they cannot produce invalid states):
 
 - Texts: `st.text(alphabet=st.characters(exclude_categories=("Cs",), exclude_characters="\x00"))`
   mixed with a `st.sampled_from(["\n", "\n\n", " ", "\t", "\u00e9", "\U0001F680"])` mixer so paragraph
-  breaks, whitespace and multi-byte and astral characters are common. CR is excluded except in P4.
+  breaks, whitespace and multi-byte and astral characters are common. CR is excluded except in P3.
 - Chunk parameters come from one composite that draws `size` first and then `overlap` in
-  `[0, size - 1]`, so `overlap < size` always holds. Invalid parameters appear only in P3.
+  `[0, size - 1]`, so `overlap < size` always holds. Invalid parameters are never generated (EX-PARAMS covers them).
 - Bundle models come from a composite that builds items constructively: Item_Ids from
   `[a-z0-9]` plus `[a-z0-9._-]{2,63}` with `unique=True`; subject-authored items of any kind first;
   non-subject items only as `review` with at least one reference drawn from the subject-authored ids;
@@ -799,18 +801,7 @@ multi-chunk items.
 **Mutation_Check.** build the id from the position alone: the uniqueness assertion fails.
 **Validates: Requirements 3.6, 3.9, 8.2**
 
-### Property 3: Invalid chunk parameters are rejected without output
-
-*For any* `size < 1`, or `overlap < 0`, or `overlap >= size`, and any item, `chunk_item` raises
-`ChunkingError` and returns nothing. Also, an item that would need more than 10000 chunks raises
-`ChunkingError` (example test with `size=2`, `overlap=1`, 10002 characters).
-
-**Oracle.** `pytest.raises(ChunkingError)`. **Generator.** invalid parameters drawn from three disjoint
-strategies, one per violated rule.
-**Mutation_Check.** change `overlap >= size` to `overlap > size`: the `overlap == size` case fails.
-**Validates: Requirements 3.6, 3.12**
-
-### Property 4: Content_Hash ignores line-ending style and reacts to every content field
+### Property 3: Content_Hash ignores line-ending style and reacts to every content field
 
 *For any* valid item, serialising it with LF or with CRLF or lone CR in `title` and `body` (values
 rewritten before `json.dumps`; Markdown bytes rewritten for docs) and reading it gives equal items and
@@ -825,7 +816,7 @@ the reader's normalisation; changed values are drawn with `.filter(lambda v: v !
 the sensitivity half fails for `author`.
 **Validates: Requirements 1.10, 8.4**
 
-### Property 5: Ingesting a bundle twice changes nothing
+### Property 4: Ingesting a bundle twice changes nothing
 
 *For any* generated bundle and any chunk parameters, after the first ingest the store content equals the
 content after a second ingest, the second report has `chunks == 0` and `unchanged == items`, and the
@@ -838,35 +829,31 @@ embedder counters. **Boundary cases.** zero items; one item; items with one chun
 fails.
 **Validates: Requirements 6.3, 6.4, 6.8, 8.3**
 
-### Property 6: Re-ingesting an edited bundle equals ingesting it fresh
+### Example tests (not properties, no Hypothesis)
 
-*For any* bundle A and edited bundle B with the same `bundle_id` (some bodies appended to, some items
-added, some unreferenced items removed), a store that ingested A and then B holds, for every item of B,
-the same item rows and chunk rows as a fresh store that ingested only B (ignoring `ingested_at`); the
-second step embeds exactly the chunks of changed and new items; items present only in A are still
-stored unchanged and counted as `absent`; items stored under another `bundle_id` are untouched.
+These three cover behaviour that a small set of concrete cases pins down fully. Each has a stable
+name used in the traceability table.
 
-**Oracle.** fresh-store comparison (a model-based oracle, simpler than the implementation) and counters.
-**Generator.** B is derived from A by per-item edit decisions that keep references resolvable (removal
-only of items nothing references).
-**Mutation_Check.** skip the delete of old chunks in the fake `replace_item`: the chunk rows of a shrunk
-item differ and the property fails.
-**Validates: Requirements 6.3, 6.5, 6.7**
+**EX-PARAMS (`tests/unit/test_chunking.py`, parametrized).** Invalid parameters raise `ChunkingError`
+and return nothing: `size = 0`, `size = -1`, `overlap = -1`, `overlap = size`, `overlap = size + 1`.
+Valid boundary cases return chunks: `size = 1, overlap = 0` and `size = 5, overlap = 4`
+(`overlap = size - 1`). A cap case: `size = 2`, `overlap = 1` and a 10002 character item raises
+`ChunkingError` (more than 10000 chunks). **Validates: Requirements 3.6, 3.12**
 
-### Property 7: Every single violation is rejected with a safe message
+**EX-REINGEST (`tests/unit/test_ingestion_service.py`).** Ingest a bundle of several items into the
+in-memory store. Edit one item (longer body, so it gains chunks), re-ingest, then assert: the store
+content for every item equals that of a fresh store that ingested only the edited bundle (ignoring
+`ingested_at`); no chunk of the edited item remains that the fresh ingest does not have; only the edited
+item's chunks were embedded in the second run; the report shows `unchanged` for the other items. A second
+case shrinks the edited item and asserts its surplus chunks are gone. **Validates: Requirements 6.3, 6.5, 6.7**
 
-*For any* valid generated bundle and any one violation from a closed catalog (unknown manifest or item
-field, wrong `kind`, bad Item_Id, bad author, bad timestamp, both or neither of `url` and `path`, non-https
-url, duplicate id, dangling reference, non-subject author on a non-review or without a subject
-reference, missing file, BOM, invalid UTF-8, invalid JSON, unsafe `path`, title too long, too many
-references), `read_bundle` raises `BundleError`; the message names the file the violation was injected
-into; and the message contains neither a body sentinel nor a title sentinel planted in the bundle.
-
-**Oracle.** `pytest.raises(BundleError)`, `file in str(error)`, sentinel absent. **Generator.**
-each mutator is a pure function from the serialised files to changed files, applied to one chosen
-file, so exactly one rule is violated; the base bundle is valid by construction.
-**Mutation_Check.** include `repr(value)` of the offending field in the message: the sentinel check fails.
-**Validates: Requirements 1.1, 1.2, 1.3, 1.5, 1.6, 1.7, 1.9, 1.12**
+**EX-VIOLATIONS (`tests/unit/test_bundle_reader.py`, parametrized).** One case per R1 violation: unknown
+manifest field, unknown item field, wrong `kind`, bad Item_Id, bad author, bad timestamp, both or neither
+of `url` and `path`, non-https url, duplicate id, dangling reference, non-subject author on a non-review
+or without a subject reference, missing file, BOM, invalid UTF-8, invalid JSON, unsafe `path`, title too
+long, too many references. Each case mutates one file of a valid hand-written bundle containing a body
+sentinel and a Markdown sentinel, and asserts `BundleError`, the message names the file and the field,
+and the message contains neither sentinel. **Validates: Requirements 1.1, 1.2, 1.3, 1.5, 1.6, 1.7, 1.9, 1.12**
 
 ## Error Handling
 
@@ -898,7 +885,7 @@ Named tests for "no text in logs or errors":
 - `tests/unit/test_ingestion_service.py::test_logs_contain_no_title_body_or_chunk_text` (R6.9): sentinel
   text in titles and bodies, scan the `log_stream` fixture output at DEBUG level for success and for an
   injected failure.
-- `tests/unit/test_bundle_reader.py::test_error_messages_never_contain_body_text` (R1.9) plus Property 7.
+- `tests/unit/test_bundle_reader.py::test_error_messages_never_contain_body_text` (R1.9) plus EX-VIOLATIONS.
 - `tests/unit/test_ingest_cli.py::test_failure_prints_one_redacted_line_without_body` (R7.4),
   parametrised over: invalid bundle with a sentinel body, store failure whose message contains the
   database password, embedder failure, missing directory, invalid settings. It asserts exactly one stderr
@@ -922,7 +909,8 @@ No setting added here is a secret (model id and cache path are not).
 
 ## Testing Strategy
 
-PBT is used for the seven properties above. Everything else is unit, contract or integration testing.
+PBT is used for the four properties above. Everything else, including EX-PARAMS, EX-REINGEST and
+EX-VIOLATIONS, is unit, contract or integration testing.
 All default-run tests use the Fake_Embedder, the in-memory store and fake clocks, and make no network
 call. The Postgres tests and the real-model test skip with the required reasons.
 
@@ -930,24 +918,24 @@ call. The Postgres tests and the real-model test skip with the required reasons.
 
 | Code | File | Kind |
 |---|---|---|
-| BR | `tests/unit/test_bundle_reader.py` | unit |
+| BR | `tests/unit/test_bundle_reader.py` (includes EX-VIOLATIONS and the decision 11 rules) | unit |
 | BL | `tests/unit/test_ingest_cli_loader.py` (`make_fetch`) | unit |
 | LG | `tests/unit/test_ledgerline.py` | unit |
-| CH | `tests/unit/test_chunking.py` | unit |
+| CH | `tests/unit/test_chunking.py` (includes EX-PARAMS) | unit |
 | FK | `tests/unit/test_fake_embedder.py` | unit plus small Hypothesis checks |
 | FE | `tests/unit/test_fastembed_embedder.py` (fake model factory) | unit |
-| IS | `tests/unit/test_ingestion_service.py` | unit |
+| IS | `tests/unit/test_ingestion_service.py` (includes EX-REINGEST) | unit |
 | CLI | `tests/unit/test_ingest_cli.py` | unit |
 | CFG | `tests/unit/test_config.py` (extended) | unit |
 | IC | `tests/unit/test_import_contracts.py` (extended) | smoke |
 | BS | `tests/unit/test_bootstrap_ingestion.py` | unit |
-| PC | `tests/property/test_chunking_properties.py` (P1, P2, P3) | property |
-| PH | `tests/property/test_content_hash_properties.py` (P4) | property |
-| PI | `tests/property/test_ingestion_properties.py` (P5, P6) | property |
-| PR | `tests/property/test_bundle_reader_properties.py` (P7, generator-validity) | property |
+| PC | `tests/property/test_chunking_properties.py` (P1, P2) | property |
+| PH | `tests/property/test_content_hash_properties.py` (P3) | property |
+| PI | `tests/property/test_ingestion_properties.py` (P4) | property |
+| PR | `tests/property/test_bundle_reader_properties.py` (generator-validity only) | property |
 | CT | `tests/contract/test_evidence_store_contract.py` | contract, fake and Postgres |
 | MG | `tests/integration/test_migration_0002.py` | integration, Postgres |
-| PK | `tests/integration/test_packaging.py` | integration (wheel content) |
+| PK | `tests/integration/test_wheel_package_data.py` | integration (wheel content) |
 | RM | `tests/integration/test_real_embedder.py` | integration, optional |
 
 ### Contract suite (CT)
@@ -958,11 +946,28 @@ compared with relative tolerance 1e-6 because pgvector stores float32); replace 
 leaves only the new chunks; wrong vector length raises and leaves the old state; a failure injected after
 the delete (Postgres: a bad row in the batch; fake: `fail_on_item_ids`) leaves the old state; two bundle
 ids with the same item id do not interfere; another `workspace_id` sees nothing. The Postgres variant uses
-the `pg_schema` fixture, creates the pool with
+the `pg_schema` fixture (which depends on `vector_extension_in_public`, below), creates the pool with
 `kwargs={"options": f"-c search_path={schema},public"}` and applies migrations 0001 and 0002 through the
 real runner. Skip reason: `no database URL is configured` (R5.10; the existing `postgres_url` fixture
 says `no database URL configured (set RECROMANCER_DATABASE_URL)`, so the task aligns that string,
 open question 16).
+
+### Postgres fixture `vector_extension_in_public` (`tests/conftest.py`)
+
+Session-scoped. It depends on `postgres_url` (so it skips with the same reason when no database is
+configured), connects to the compose database and runs
+`CREATE EXTENSION IF NOT EXISTS vector SCHEMA public` once, before any throwaway-schema test. It then
+asserts that `SELECT extnamespace::regnamespace FROM pg_extension WHERE extname = 'vector'` returns
+`public`. If it returns another schema the fixture calls `pytest.fail` (it never skips), so a wrongly
+placed extension cannot go unnoticed. `pg_schema` depends on this fixture, so every test that uses a
+throwaway schema with search path `<schema>, public` gets the extension from `public`.
+
+Why dropping a test schema can never drop the extension: an extension belongs to the schema it was
+created in (`pg_extension.extnamespace`), and extensions are database-wide, one per database.
+`CREATE EXTENSION IF NOT EXISTS vector` does nothing when the extension already exists in any schema, so
+migration 0001 is a no-op inside the throwaway schema. The throwaway schema therefore owns no extension
+objects. `DROP SCHEMA <throwaway> CASCADE` removes only objects in that schema (tables, indexes, the
+migrations table). The `vector` type lives in `public` and survives.
 
 ### Migration test (MG)
 
@@ -989,23 +994,24 @@ loader is covered by LG on `ledgerline_dir()`.
 
 ### Traceability
 
-Rows list the component and the test. "Prop" means a numbered property.
+Rows list the component and the test. "Prop" means a numbered property; "EX-" names an example test.
 
 | Criterion | Component | Test |
 |---|---|---|
-| R1.1 | `check_manifest` | BR, Prop 7 |
-| R1.2 | `check_manifest` | BR, Prop 7 |
-| R1.3 | `read_json_item` | BR, Prop 7 |
+| R1.1 | `check_manifest` | BR, EX-VIOLATIONS |
+| R1.2 | `check_manifest` | BR, EX-VIOLATIONS |
+| R1.3 | `read_json_item` | BR, EX-VIOLATIONS |
 | R1.4 | `read_doc` | BR |
-| R1.5 | cross-item checks | BR, Prop 7 |
-| R1.6 | cross-item checks | BR, Prop 7 |
-| R1.7 | `check_*` unknown field | BR, Prop 7 |
+| R1.5 | cross-item checks | BR, EX-VIOLATIONS |
+| R1.6 | cross-item checks | BR, EX-VIOLATIONS |
+| R1.7 | `check_*` unknown field | BR, EX-VIOLATIONS |
 | R1.8 | limits | BR (boundary: limit and limit plus 1) |
-| R1.9 | `BundleError` construction | BR, Prop 7 |
-| R1.10 | normalisation | Prop 4 |
+| R1.9 | `BundleError` construction | BR, EX-VIOLATIONS |
+| R1.10 | normalisation | Prop 3 |
 | R1.11 | loop order | PR generator-validity test |
 | R1.12 | `check_manifest` and `make_fetch` | BR and BL (fetch spy sees no call) |
 | R1.13 | validation order | BR (two-violation cases) |
+| Decision 11 extra rules | reader | BR (example tests only, one case per rule; no property) |
 | R2.1 | fixture files | LG |
 | R2.2 | fixture content | LG (counts, kinds, subject) |
 | R2.3 | fixture content | LG (flag, README, hosts) |
@@ -1022,13 +1028,13 @@ Rows list the component and the test. "Prop" means a numbered property.
 | R3.3 | chunker | Prop 1, CH |
 | R3.4 | chunker | Prop 1, CH (fixed examples) |
 | R3.5 | chunker | Prop 1 |
-| R3.6 | chunker | Prop 2, Prop 3 (cap example) |
+| R3.6 | chunker | Prop 2, EX-PARAMS (cap case) |
 | R3.7 | chunker | Prop 1 |
 | R3.8 | chunker | Prop 1 |
 | R3.9 | chunker | Prop 2 |
 | R3.10 | chunker | Prop 1 |
 | R3.11 | chunker | Prop 1, CH |
-| R3.12 | chunker | Prop 3 |
+| R3.12 | chunker | EX-PARAMS |
 | R4.1 | port, adapter | FK, FE |
 | R4.2 | `Settings` | CFG, `.env.example` consistency test |
 | R4.3 | adapter | IC, FE (AST check that `fastembed` is imported only under `embed`, never at module level) |
@@ -1056,11 +1062,11 @@ Rows list the component and the test. "Prop" means a numbered property.
 | R5.12 | `build_ingestion_service` | BS |
 | R6.1 | service | IC (C4) |
 | R6.2 | `bootstrap` | BS |
-| R6.3 | service | IS, Prop 5, Prop 6 |
-| R6.4 | service | IS, Prop 5 |
-| R6.5 | service, store | IS, Prop 6, CT |
+| R6.3 | service | IS, Prop 4, EX-REINGEST |
+| R6.4 | service | IS, Prop 4 |
+| R6.5 | service, store | IS, EX-REINGEST, CT |
 | R6.6 | service | IS (fake failure injection, counts in message, earlier items kept) |
-| R6.7 | service | IS, Prop 6 |
+| R6.7 | service | IS, EX-REINGEST |
 | R6.8 | service | IS (FakeClock value stored; no `random` or `uuid` import via AST check) |
 | R6.9 | service | IS named test |
 | R6.10 | service | IS (invalid bundle leaves store empty) |
@@ -1075,8 +1081,8 @@ Rows list the component and the test. "Prop" means a numbered property.
 | R7.9 | docs | task: DEV_SETUP section |
 | R8.1 | test layout | `tests/property/` and `invariants.py` |
 | R8.2 | properties | Prop 1, Prop 2 |
-| R8.3 | properties | Prop 5 |
-| R8.4 | properties | Prop 4 |
+| R8.3 | properties | Prop 4 |
+| R8.4 | properties | Prop 3 |
 | R8.5 | comments | each property carries its Mutation_Check comment |
 | R8.6 | process | task notes record each mutation run |
 | R8.7 | tests | `FakeClock`, `FakeEmbedder`, no network |
@@ -1100,17 +1106,17 @@ Each step ends with `cd backend; ruff check --fix .; ruff format .; mypy; pytest
 2. **Full Ledgerline and full validation.** All 31 fixture files, the complete reader rules, `.gitattributes`,
    LG tests (counts, planted facts, silences, hosts, golden hashes), BR tests, `make_fetch`. Proves
    R1 and R2 on real data.
-3. **Properties.** Strategies, invariants, P1 to P7, the generator-validity test, and each Mutation_Check
+3. **Properties.** Strategies, invariants, P1 to P4, EX-PARAMS, EX-REINGEST, EX-VIOLATIONS, the generator-validity test, and each Mutation_Check
    run once and recorded in the task notes.
 4. **CLI with fakes.** `Settings` additions, `redaction_values`, `ingest_cli.py`, `bootstrap` helpers, the
    C8 line and its test update, `structure.md`. Command:
    `python -m recromancer.ingest_cli src\recromancer\ingest\fixtures\ledgerline` works only with a real
    store, so tests inject fakes here. Proves R7 and the redaction rules.
-5. **Postgres.** Migration 0002, `PostgresEvidenceStore`, the `<schema>, public` search path change,
+5. **Postgres.** Migration 0002, `PostgresEvidenceStore`, the `<schema>, public` search path change, the `vector_extension_in_public` fixture,
    CT and MG, then the CLI against the compose database with the Fake_Embedder injected
    (`embedder_factory` seam in a one-off PowerShell run of `main`). Proves the schema, the HNSW index
    and atomic replace on real Postgres.
-6. **Real model (blocked on open question 1).** Add `fastembed>=0.9.1`, the adapter, FE tests, RM,
+6. **Real model (prerequisite, decision 1: the user has rebuilt `.venv` from python.org CPython 3.11 and `python -c "import onnxruntime"` exits 0 from `backend/`).** Add `fastembed>=0.9.1`, the adapter, FE tests, RM,
    `docs/DEV_SETUP.md` (V0 venv check, V1 findings, V2 output, the new CLI section), `.env.example`.
    Then, from `backend/` with the venv active: `python -m recromancer.db.migrate` followed by
    `python -m recromancer.ingest_cli src\recromancer\ingest\fixtures\ledgerline`, run once by hand
@@ -1144,14 +1150,17 @@ filter.
 
 Numbered; each has a default already assumed in this design.
 
-1. **Venv rebuild (V0).** Default: the user recreates `.venv` from python.org CPython. Blocks only
+1. **Venv rebuild (V0).** Decision: the user rebuilds `.venv` themselves from python.org CPython 3.11
+   (CI parity). The rebuild is a prerequisite of step 6, verified by `python -c "import onnxruntime"`
+   exiting 0 from `backend/` with the venv active. Blocks only
    walking skeleton step 6. Until then the adapter is verified with fake models.
 2. **Pin `onnxruntime` directly?** Default: no, only `fastembed>=0.9.1`. A pin would help only if fastembed's
    transitive range admits a bad release.
-3. **Cache directory.** Default: `embedding_cache_dir` is `None`, which makes fastembed use
+3. **Cache directory.** Decision: the `Settings` default of `embedding_cache_dir` stays `None`, which makes fastembed use
    `FASTEMBED_CACHE_PATH` or `%TEMP%\fastembed_cache`; the adapter always passes `cache_dir` explicitly
-   (the Settings value, possibly `None`). A set value must be an absolute path. DEV_SETUP recommends a
-   stable directory. Alternative: bootstrap resolves a fixed fallback under `%LOCALAPPDATA%`; rejected
+   (the Settings value, possibly `None`). A set value must be an absolute path. DEV_SETUP gives the stable
+   absolute example `C:\Users\<you>\.cache\recromancer`, set through `RECROMANCER_EMBEDDING_CACHE_DIR`
+   (PowerShell: `$env:RECROMANCER_EMBEDDING_CACHE_DIR = "C:\Users\<you>\.cache\recromancer"`, or in `.env`). Alternative: bootstrap resolves a fixed fallback under `%LOCALAPPDATA%`; rejected
    as a platform branch not asked for.
 4. **Hugging Face warnings.** Default: accept them, set no environment variable (R7.7).
 5. **C8 line and a stricter contract.** Default: add `"ingest_cli",` as the first layer; no extra
@@ -1170,14 +1179,19 @@ Numbered; each has a default already assumed in this design.
     fields (Postgres `text` cannot store NUL; a surrogate cannot be UTF-8 encoded for hashing); require
     `subject.handle` to match the author pattern; apply the manifest path rule to an item's `path`; require
     a non-empty hostname for `url`; allow an empty `files` array; measure length limits after line-ending
-    normalisation; ignore files the manifest does not list.
+    normalisation; ignore files the manifest does not list. Decision: these rules stay, and they are
+    covered by example tests only (one case per rule in `test_bundle_reader.py`), not by a property.
 12. **Canonical form.** Default: fields and `null` handling as in A2; `bundle_id` and subject are not hashed.
 13. **Extra index** `evidence_chunks_item_idx` supports per-item delete and the cascade. Without it each
     replace scans the chunk primary key.
 14. **`PostgresMigrationStore` search path** becomes `SET search_path TO <schema>, public` so tests in a
-    throwaway schema can resolve the `vector` type when the extension already lives in `public`
-    (if the extension is not installed, 0001 installs it into the throwaway schema, and the cascade drop
-    removes it, which keeps tests self-contained). Existing tests only match the substring `search_path`.
+    throwaway schema can resolve the `vector` type, which lives in `public`. Decision: no test ever
+    creates the extension inside a throwaway schema. The session-scoped fixture
+    `vector_extension_in_public` runs `CREATE EXTENSION IF NOT EXISTS vector SCHEMA public` once and
+    asserts `extnamespace` is `public`, failing (not skipping) otherwise, so migration 0001's
+    `CREATE EXTENSION IF NOT EXISTS vector` is a no-op in the throwaway schema and
+    `DROP SCHEMA <throwaway> CASCADE` cannot drop the extension (see Testing Strategy, Postgres fixture).
+    Existing tests only match the substring `search_path`.
 15. **`Settings.redaction_values()`** replaces the private `_redaction_seed` of `migrate.py`, so
     `ingest_cli` does not import from `db.migrate`. Fallback: duplicate the eight lines.
 16. **Skip text.** R5.10 requires `no database URL is configured`; the shared fixture in
@@ -1188,8 +1202,10 @@ Numbered; each has a default already assumed in this design.
 18. **Logging versus the one-line failure contract (R6.9, R7.4).** Default: INFO summary only on success,
     per-item events at DEBUG; the CLI logs to stderr. Operators who choose DEBUG see extra stderr lines.
 19. **Network guard.** Default: no global socket blocker; tests inject fakes. A conftest guard is optional later.
-20. **Extra properties.** P6 (edited re-ingest equals fresh) and P3 and P7 go beyond the three properties
-    named in R8; they cover R6.5, R6.7, R3.12 and R1 and are cheap.
+20. **Properties versus example tests.** Decision: four Hypothesis properties (P1 chunk coverage, P2
+    chunk ids, P3 content hash, P4 idempotency), each with a Mutation_Check; they cover R8.2 to R8.4.
+    Invalid chunk parameters (EX-PARAMS, R3.12), edited-bundle re-ingest (EX-REINGEST, R6.3, R6.5, R6.7)
+    and the R1 violation catalog (EX-VIOLATIONS) are example tests, not properties.
 21. **Real-model test in a subprocess** (see Testing Strategy), so a V0 crash cannot kill pytest.
 22. **Docs.** `docs/SCOPE_AND_DESIGN.md` still names BGE-M3 at 1024 dimensions (requirements question 1);
     it is not edited here. `docs/DEV_SETUP.md` lines that still say localhost are untouched; line 49 mentions a
@@ -1218,7 +1234,7 @@ Each is verified by the first task that uses it; the task note records the resul
 | 6 | `mypy --strict` accepts fastembed's annotations (`py.typed` is shipped) | step 6 |
 | 7 | huggingface_hub and fastembed make more than one download attempt internally, which conflicts with "single attempt" (R4.12) only if our code retried; the library behaviour is unverified | step 6 |
 | 8 | `psycopg_pool.ConnectionPool(kwargs={"options": "-c search_path=..."})` applies the setting to each pooled connection | CT (step 5) |
-| 9 | `CREATE EXTENSION vector` into a throwaway schema as the compose superuser, then `DROP SCHEMA ... CASCADE` | MG (step 5) |
+| 9 | The compose role can run `CREATE EXTENSION IF NOT EXISTS vector SCHEMA public` (superuser assumed), `extnamespace` is `public` afterwards, and `DROP SCHEMA <throwaway> CASCADE` leaves the extension in place | first Postgres task (`vector_extension_in_public` fixture), then MG (step 5) |
 | 10 | `Path.resolve()` containment check behaves for Windows drive and UNC paths; symlink creation needs privilege on Windows (that test skips without it) | BL (step 2) |
 | 11 | `str.isspace()` classification of exotic characters matches the oracle's loop (both use `isspace`; the oracle differs in structure only) | Prop 1 (step 3) |
 | 12 | Hypothesis health checks on 5000 to 20000 character texts (`large_base_example`, `too_slow`); may need `suppress_health_check` for that one test | Prop 1 (step 3) |
