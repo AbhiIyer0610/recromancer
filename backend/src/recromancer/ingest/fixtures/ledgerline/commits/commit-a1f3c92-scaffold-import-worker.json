@@ -1,0 +1,10 @@
+{
+  "id": "commit-a1f3c92-scaffold-import-worker",
+  "kind": "commit",
+  "author": "priya-raman",
+  "timestamp": "2025-02-03T14:22:41Z",
+  "title": "Scaffold the settlement import worker",
+  "body": "Adds the nightly import entrypoint, a streaming CSV reader for the processor's settlement files and the first `settlement_lines` table.\n\nNo matching logic yet. The file is read row by row, so a 2 GB file does not need 2 GB of memory.",
+  "references": [],
+  "url": "https://example.invalid/ledgerline/commit/a1f3c92"
+}

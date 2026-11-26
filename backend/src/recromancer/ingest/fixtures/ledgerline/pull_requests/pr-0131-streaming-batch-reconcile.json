@@ -1,0 +1,10 @@
+{
+  "id": "pr-0131-streaming-batch-reconcile",
+  "kind": "pull_request",
+  "author": "priya-raman",
+  "timestamp": "2025-08-05T12:15:33Z",
+  "title": "Reconcile in streaming batches of 5,000 lines",
+  "body": "## What\n\nThe matcher now reads settlement lines in batches of 5,000 instead of loading the whole day into memory.\n\n## Why\n\nThe December file was 3x a normal day and the worker was killed by the out-of-memory killer at 02:41.\n\n## How\n\nKeyset pagination on `settlement_lines.id`. Each batch is matched in its own transaction, so a failure leaves earlier batches committed and the run can resume.\n\n## Testing\n\nPeak memory on the large sample file: 1.9 GB before, 210 MB after.",
+  "references": [],
+  "url": "https://example.invalid/ledgerline/pull/131"
+}

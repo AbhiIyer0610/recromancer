@@ -1,0 +1,13 @@
+{
+  "id": "pr-0163-store-rate-id",
+  "kind": "pull_request",
+  "author": "priya-raman",
+  "timestamp": "2026-04-14T11:30:45Z",
+  "title": "Store a rate id with every converted amount",
+  "body": "## What\n\nAdds `rate_id` to `ledger_entries` and an append-only `fx_rates` table. Converted values are derived from the original amount and the rate with decimal arithmetic.\n\n## Why\n\nReports must be reproducible. See the review notes on the multi-currency RFC and issue 251.\n\n## Notes\n\n- Rates are never updated. A correction is a new row.\n- Integer minor units for amounts, `numeric(18,8)` for rates.\n\n## Testing\n\nProperty test: converting then summing in any order gives the same total.",
+  "references": [
+    "issue-0251-fx-rounding-drift",
+    "doc-rfc-multi-currency-ledger"
+  ],
+  "url": "https://example.invalid/ledgerline/pull/163"
+}

@@ -1,0 +1,151 @@
+{
+  "bundle_id": "ledgerline",
+  "schema_version": 1,
+  "subject": {
+    "handle": "priya-raman",
+    "display_name": "Priya Raman"
+  },
+  "fictional": true,
+  "files": [
+    {
+      "path": "docs/doc-architecture-overview.md",
+      "kind": "doc",
+      "id": "doc-architecture-overview",
+      "author": "priya-raman",
+      "timestamp": "2025-01-14T10:05:00Z",
+      "title": "Ledgerline architecture overview"
+    },
+    {
+      "path": "commits/commit-a1f3c92-scaffold-import-worker.json",
+      "kind": "commit"
+    },
+    {
+      "path": "commits/commit-7be04d1-match-by-reference.json",
+      "kind": "commit"
+    },
+    {
+      "path": "pull_requests/pr-0098-settlement-matcher.json",
+      "kind": "pull_request"
+    },
+    {
+      "path": "reviews/review-pr-0098-tomas-reason-codes.json",
+      "kind": "review"
+    },
+    {
+      "path": "commits/commit-3d9e5a7-currency-metadata-lru.json",
+      "kind": "commit"
+    },
+    {
+      "path": "pull_requests/pr-0117-webhook-signature-check.json",
+      "kind": "pull_request"
+    },
+    {
+      "path": "reviews/review-pr-0117-mei-clock-skew.json",
+      "kind": "review"
+    },
+    {
+      "path": "pull_requests/pr-0131-streaming-batch-reconcile.json",
+      "kind": "pull_request"
+    },
+    {
+      "path": "reviews/review-pr-0131-mei-batch-size.json",
+      "kind": "review"
+    },
+    {
+      "path": "issues/issue-0211-stale-balances-after-import.json",
+      "kind": "issue"
+    },
+    {
+      "path": "pull_requests/pr-0142-remove-redis-cache.json",
+      "kind": "pull_request"
+    },
+    {
+      "path": "reviews/review-pr-0142-tomas-month-end-load.json",
+      "kind": "review"
+    },
+    {
+      "path": "reviews/review-pr-0142-priya-measured-load.json",
+      "kind": "review"
+    },
+    {
+      "path": "commits/commit-c40b8e2-drop-cache-settings.json",
+      "kind": "commit"
+    },
+    {
+      "path": "issues/issue-0233-duplicate-settlement-webhook.json",
+      "kind": "issue"
+    },
+    {
+      "path": "commits/commit-9c21d7b-require-idempotency-key.json",
+      "kind": "commit"
+    },
+    {
+      "path": "commits/commit-e17a6c4-idempotency-unique-constraint.json",
+      "kind": "commit"
+    },
+    {
+      "path": "pull_requests/pr-0149-idempotency-key-header.json",
+      "kind": "pull_request"
+    },
+    {
+      "path": "reviews/review-pr-0149-arjun-retention.json",
+      "kind": "review"
+    },
+    {
+      "path": "docs/doc-rfc-multi-currency-ledger.md",
+      "kind": "doc",
+      "id": "doc-rfc-multi-currency-ledger",
+      "author": "priya-raman",
+      "timestamp": "2026-02-24T10:00:00Z",
+      "title": "RFC: multi-currency ledger (draft from the payments team, review notes by Priya)"
+    },
+    {
+      "path": "reviews/review-rfc-multi-currency-priya-objection.json",
+      "kind": "review"
+    },
+    {
+      "path": "issues/issue-0251-fx-rounding-drift.json",
+      "kind": "issue"
+    },
+    {
+      "path": "pull_requests/pr-0163-store-rate-id.json",
+      "kind": "pull_request"
+    },
+    {
+      "path": "reviews/review-pr-0163-tomas-rate-table.json",
+      "kind": "review"
+    },
+    {
+      "path": "docs/doc-deployment-runbook.md",
+      "kind": "doc",
+      "id": "doc-deployment-runbook",
+      "author": "priya-raman",
+      "timestamp": "2026-06-02T13:00:00Z",
+      "title": "Ledgerline deployment runbook"
+    },
+    {
+      "path": "commits/commit-0f4e7b9-systemd-timer-units.json",
+      "kind": "commit"
+    },
+    {
+      "path": "issues/issue-0270-purge-job-slow.json",
+      "kind": "issue"
+    },
+    {
+      "path": "commits/commit-2b6f9d0-batch-size-config.json",
+      "kind": "commit"
+    },
+    {
+      "path": "pull_requests/pr-0171-ownership-handoff-docs.json",
+      "kind": "pull_request"
+    },
+    {
+      "path": "docs/doc-handoff-notes.md",
+      "kind": "doc",
+      "id": "doc-handoff-notes",
+      "author": "priya-raman",
+      "timestamp": "2026-10-09T12:00:00Z",
+      "title": "Ledgerline handoff notes"
+    }
+  ]
+}

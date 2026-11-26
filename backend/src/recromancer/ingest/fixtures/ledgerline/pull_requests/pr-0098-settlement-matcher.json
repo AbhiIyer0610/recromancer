@@ -1,0 +1,12 @@
+{
+  "id": "pr-0098-settlement-matcher",
+  "kind": "pull_request",
+  "author": "priya-raman",
+  "timestamp": "2025-03-20T09:12:30Z",
+  "title": "Add the settlement matcher",
+  "body": "## What\n\nAdds the matcher that pairs settlement lines with ledger entries, plus the `exceptions` table for lines that cannot be paired.\n\n## Why\n\nFinance has been doing this in a spreadsheet every morning. The matcher does it after the nightly import and leaves the hard cases for a human.\n\n## How\n\n- Match by processor reference, then by amount inside the account.\n- Anything left over becomes an exception with a reason code (`no_reference`, `amount_mismatch`, `duplicate_reference`).\n- The matcher is read-only against the ledger.\n\n## Testing\n\nUnit tests for each reason code. A replay of three weeks of real-shaped sample data matches 99.2% of lines automatically.",
+  "references": [
+    "commit-7be04d1-match-by-reference"
+  ],
+  "url": "https://example.invalid/ledgerline/pull/98"
+}

@@ -1,0 +1,101 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Create the domain types and error classes": [
+      {
+        "executionId": "53ad81b8-d778-4239-ae93-06a596cf0299",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795628299082
+      },
+      {
+        "executionId": "53ad81b8-d778-4239-ae93-06a596cf0299",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795628455718
+      }
+    ],
+    "1.2 Implement the Bundle_Reader and `content_hash`": [
+      {
+        "executionId": "53ad81b8-d778-4239-ae93-06a596cf0299",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795628461456
+      },
+      {
+        "executionId": "53ad81b8-d778-4239-ae93-06a596cf0299",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795628798714
+      }
+    ],
+    "1.3 Implement the Chunker": [
+      {
+        "executionId": "53ad81b8-d778-4239-ae93-06a596cf0299",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795628803560
+      },
+      {
+        "executionId": "53ad81b8-d778-4239-ae93-06a596cf0299",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795629003380
+      }
+    ],
+    "1.4 Create `ingest_cli.py` with the Bundle_Loader only, and enforce it in C8": [
+      {
+        "executionId": "53ad81b8-d778-4239-ae93-06a596cf0299",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795629010257
+      },
+      {
+        "executionId": "53ad81b8-d778-4239-ae93-06a596cf0299",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795629282036
+      }
+    ],
+    "1.5 Create the Ledgerline bundle": [
+      {
+        "executionId": "53ad81b8-d778-4239-ae93-06a596cf0299",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795629290946
+      },
+      {
+        "executionId": "53ad81b8-d778-4239-ae93-06a596cf0299",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795629756761
+      }
+    ],
+    "1.6 Write Bundle_Reader tests including EX-VIOLATIONS": [
+      {
+        "executionId": "53ad81b8-d778-4239-ae93-06a596cf0299",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795629777232
+      },
+      {
+        "executionId": "53ad81b8-d778-4239-ae93-06a596cf0299",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795630026394
+      }
+    ],
+    "1.7 Write the Ledgerline tests and the golden hash file": [
+      {
+        "executionId": "53ad81b8-d778-4239-ae93-06a596cf0299",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795630032011
+      },
+      {
+        "executionId": "53ad81b8-d778-4239-ae93-06a596cf0299",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795630239647
+      }
+    ],
+    "1.8 Write the package-data wheel test PK": [
+      {
+        "executionId": "53ad81b8-d778-4239-ae93-06a596cf0299",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795630245213
+      },
+      {
+        "executionId": "53ad81b8-d778-4239-ae93-06a596cf0299",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795630517806
+      }
+    ]
+  }
+}

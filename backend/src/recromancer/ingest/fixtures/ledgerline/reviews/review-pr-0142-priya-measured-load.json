@@ -1,0 +1,12 @@
+{
+  "id": "review-pr-0142-priya-measured-load",
+  "kind": "review",
+  "author": "priya-raman",
+  "timestamp": "2025-11-14T16:02:11Z",
+  "title": "Reply on PR 142: month-end numbers",
+  "body": "Good question, I only had the average day when I opened the PR. I have now replayed the October month-end file in staging at 3x peak load.\n\n- p95: 77 ms (under 80 ms)\n- p99: 118 ms\n- Connection pool peak: 62% of 40\n- No stale balances in the run\n\nSo the removal still holds with the cache gone, and the p95 stays under 80 ms even at three times peak. Nothing else reads the cache keys; I searched the repo and the other services' configs. I will add the month-end replay to the release checklist.",
+  "references": [
+    "pr-0142-remove-redis-cache"
+  ],
+  "url": "https://example.invalid/ledgerline/pull/142/reviews/2"
+}

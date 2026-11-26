@@ -1,0 +1,12 @@
+{
+  "id": "pr-0171-ownership-handoff-docs",
+  "kind": "pull_request",
+  "author": "priya-raman",
+  "timestamp": "2026-09-30T16:10:00Z",
+  "title": "Write handoff notes for Ledgerline",
+  "body": "## What\n\nAdds `docs/handoff-notes.md`: current state, open work, how to run things, and where the decisions are recorded.\n\n## Why\n\nOwnership of the service moves to the wider payments team after 2026-10-16.\n\n## Notes\n\nNo code changes.",
+  "references": [
+    "doc-deployment-runbook"
+  ],
+  "url": "https://example.invalid/ledgerline/pull/171"
+}

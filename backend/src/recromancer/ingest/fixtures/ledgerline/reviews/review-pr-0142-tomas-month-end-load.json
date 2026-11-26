@@ -1,0 +1,12 @@
+{
+  "id": "review-pr-0142-tomas-month-end-load",
+  "kind": "review",
+  "author": "tomas-okafor",
+  "timestamp": "2025-11-13T09:18:40Z",
+  "title": "Review of PR 142: what about month-end load?",
+  "body": "The race explanation makes sense and I am happy to lose a dependency. My worry is month-end. Settlement volume roughly triples on the last business day and the matcher reads a balance for every open account.\n\nDid you test with month-end shaped load, or only an average Tuesday? An extra 12 ms is fine, but I would like to know it stays small when Postgres is busy.",
+  "references": [
+    "pr-0142-remove-redis-cache"
+  ],
+  "url": "https://example.invalid/ledgerline/pull/142/reviews/1"
+}

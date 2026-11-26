@@ -69,6 +69,7 @@ def test_c8_layers_match_documented_order(
     assert contract["type"] == "layers"
     assert contract["containers"] == ["recromancer"]
     assert contract["layers"] == [
+        "ingest_cli",
         "bootstrap",
         "api | mcp",
         "service",

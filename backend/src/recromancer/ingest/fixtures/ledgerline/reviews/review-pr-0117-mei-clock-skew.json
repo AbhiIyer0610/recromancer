@@ -1,0 +1,12 @@
+{
+  "id": "review-pr-0117-mei-clock-skew",
+  "kind": "review",
+  "author": "mei-lindqvist",
+  "timestamp": "2025-06-11T08:51:47Z",
+  "title": "Review of PR 117: signature check",
+  "body": "Approving. Small thing: the processor signs a timestamp too. Should we reject payloads older than five minutes? Otherwise a captured request can be replayed forever.\n\nHappy to take that as a separate ticket.",
+  "references": [
+    "pr-0117-webhook-signature-check"
+  ],
+  "url": "https://example.invalid/ledgerline/pull/117/reviews/1"
+}

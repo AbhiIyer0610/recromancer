@@ -1,3 +1,4 @@
 # Keep SQL and Python LF so migration checksums are stable across platforms.
 *.sql text eol=lf
 *.py text eol=lf
+backend/src/recromancer/ingest/fixtures/** text eol=lf

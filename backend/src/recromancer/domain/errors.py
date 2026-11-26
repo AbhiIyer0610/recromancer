@@ -29,3 +29,17 @@ class RecromancerError(Exception):
         super().__init__(message)
         self.code = code
         self.message = message
+
+
+class BundleError(RecromancerError):
+    """An Evidence_Bundle is invalid or unreadable. Long messages are truncated."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(ErrorCode.VALIDATION_ERROR, message[: self.MAX_MESSAGE_LENGTH])
+
+
+class ChunkingError(RecromancerError):
+    """Chunking parameters or input are invalid. Long messages are truncated."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(ErrorCode.VALIDATION_ERROR, message[: self.MAX_MESSAGE_LENGTH])

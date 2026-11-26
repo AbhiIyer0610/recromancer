@@ -1,0 +1,12 @@
+{
+  "id": "issue-0270-purge-job-slow",
+  "kind": "issue",
+  "author": "priya-raman",
+  "timestamp": "2026-08-14T15:41:50Z",
+  "title": "Idempotency key purge takes 11 minutes",
+  "body": "## Summary\n\nThe 04:00 purge of idempotency keys older than 24 hours now takes about 11 minutes and holds row locks long enough to slow the first API calls of the morning.\n\n## Cause\n\nIt deletes in one statement. Retention is still 24 hours, as decided in issue 233, so the table is not growing; the delete is just large after busy days.\n\n## Proposal\n\nDelete in batches of 10,000 ordered by `created_at`, committing between batches. The index on `created_at` already exists.",
+  "references": [
+    "issue-0233-duplicate-settlement-webhook"
+  ],
+  "url": "https://example.invalid/ledgerline/issues/270"
+}

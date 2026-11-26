@@ -1,0 +1,12 @@
+{
+  "id": "review-pr-0131-mei-batch-size",
+  "kind": "review",
+  "author": "mei-lindqvist",
+  "timestamp": "2025-08-06T10:44:21Z",
+  "title": "Review of PR 131: batch size",
+  "body": "Nice win on memory. Is 5,000 a measured number or a guess? I would put it in config so ops can change it without a release.",
+  "references": [
+    "pr-0131-streaming-batch-reconcile"
+  ],
+  "url": "https://example.invalid/ledgerline/pull/131/reviews/1"
+}

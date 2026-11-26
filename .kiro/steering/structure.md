@@ -9,6 +9,7 @@ backend/src/recromancer/
   domain/      entities, ids, errors              (depends on nothing)
   grounding/   text utils, verifier               (stdlib only)
   ingest/      pure pipeline logic: chunking, normalisation, job planning (domain only)
+  ingest/fixtures/  packaged sample bundles (data only, no __init__.py), e.g. ledgerline/
   retrieval/   rank fusion, retrievers (memory, postgres)
   llm/         gateway port, resilience, provider adapters, ModelRouter, fakes
   embed/       Embedder port and adapters
@@ -17,6 +18,7 @@ backend/src/recromancer/
   api/         FastAPI app factory, routes, SSE (thin)
   mcp/         MCP server exposing ask_ghost and search_evidence
   config.py    Settings
+  ingest_cli.py  ingest command line and bundle loader; top of the layer order beside bootstrap
 backend/tests/{unit,property,integration,contract}
 frontend/      React app (see seance-ui spec)
 docs/          SCOPE_AND_DESIGN.md, DEV_SETUP.md, KIRO_USAGE.md
@@ -32,7 +34,8 @@ never import `service` or each other, and are wired only in `bootstrap.py` (the 
 Network-facing source connectors are adapters in their own package, added by a later spec, not
 part of `ingest`. `config.py` and `observability.py` sit beside the stack. Never import upward.
 
-Layer order, top to bottom: `bootstrap`; `api` | `mcp`; `service`; `llm` | `embed` | `retrieval` |
+Layer order, top to bottom: `ingest_cli` (command line entry, beside `bootstrap` at the top);
+`bootstrap`; `api` | `mcp`; `service`; `llm` | `embed` | `retrieval` |
 `db`; `grounding` | `ingest`; `domain`. Enforced by import-linter contracts in `backend/pyproject.toml`.
 
 ## Naming

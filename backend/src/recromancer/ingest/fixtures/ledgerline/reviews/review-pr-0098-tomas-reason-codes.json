@@ -1,0 +1,12 @@
+{
+  "id": "review-pr-0098-tomas-reason-codes",
+  "kind": "review",
+  "author": "tomas-okafor",
+  "timestamp": "2025-03-21T11:03:55Z",
+  "title": "Review of PR 98: reason codes look right, one question on duplicates",
+  "body": "Looks good overall. I like that the matcher never writes to the ledger.\n\nOne question: for `duplicate_reference`, do we keep both lines in the exceptions table or only the second one? If a human has to resolve it they will want to see both side by side.\n\nNot blocking, can be a follow-up.",
+  "references": [
+    "pr-0098-settlement-matcher"
+  ],
+  "url": "https://example.invalid/ledgerline/pull/98/reviews/1"
+}

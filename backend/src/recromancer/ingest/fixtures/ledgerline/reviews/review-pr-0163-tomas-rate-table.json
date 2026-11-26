@@ -1,0 +1,12 @@
+{
+  "id": "review-pr-0163-tomas-rate-table",
+  "kind": "review",
+  "author": "tomas-okafor",
+  "timestamp": "2026-04-16T09:05:31Z",
+  "title": "Review of PR 163: rate table",
+  "body": "Fine by me. Do we need an index on `(pair, effective_at)`? Lookups by pair and time will be the common case.",
+  "references": [
+    "pr-0163-store-rate-id"
+  ],
+  "url": "https://example.invalid/ledgerline/pull/163/reviews/1"
+}

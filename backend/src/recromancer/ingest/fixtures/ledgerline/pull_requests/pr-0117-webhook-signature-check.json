@@ -1,0 +1,10 @@
+{
+  "id": "pr-0117-webhook-signature-check",
+  "kind": "pull_request",
+  "author": "priya-raman",
+  "timestamp": "2025-06-10T15:30:02Z",
+  "title": "Verify processor webhook signatures",
+  "body": "## What\n\nRejects any webhook whose HMAC signature does not match the shared secret. Unsigned or badly signed requests get a 401 and are logged by length only.\n\n## Notes\n\nThe check itself is idempotent: verifying the same payload twice gives the same answer and changes no state. This PR is only about authenticity. It does not try to stop the same signed payload from being delivered twice.\n\n## Testing\n\n- Valid signature accepted.\n- Altered body rejected.\n- Missing header rejected.\n- Constant-time comparison used (`hmac.compare_digest`).",
+  "references": [],
+  "url": "https://example.invalid/ledgerline/pull/117"
+}

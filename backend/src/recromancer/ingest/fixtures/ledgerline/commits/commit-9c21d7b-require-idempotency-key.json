@@ -1,0 +1,12 @@
+{
+  "id": "commit-9c21d7b-require-idempotency-key",
+  "kind": "commit",
+  "author": "priya-raman",
+  "timestamp": "2026-01-15T11:09:37Z",
+  "title": "Require an Idempotency-Key header on settlement posting endpoints",
+  "body": "Posting endpoints now return 400 without the header. Webhook handlers use the processor's `event_id` as the key.\n\nA repeat with the same key and body returns the stored response. A repeat with the same key and a different body returns 422.\n\nSee issue 233 for the incident and the decision.",
+  "references": [
+    "issue-0233-duplicate-settlement-webhook"
+  ],
+  "url": "https://example.invalid/ledgerline/commit/9c21d7b"
+}

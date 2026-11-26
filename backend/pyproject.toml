@@ -171,6 +171,7 @@ name = "layer-order"
 type = "layers"
 containers = ["recromancer"]
 layers = [
+  "ingest_cli",
   "bootstrap",
   "api | mcp",
   "service",

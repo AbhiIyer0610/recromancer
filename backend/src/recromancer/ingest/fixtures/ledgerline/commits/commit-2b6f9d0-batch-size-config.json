@@ -1,0 +1,10 @@
+{
+  "id": "commit-2b6f9d0-batch-size-config",
+  "kind": "commit",
+  "author": "priya-raman",
+  "timestamp": "2026-09-08T09:27:16Z",
+  "title": "Make the reconcile batch size configurable",
+  "body": "`RECONCILE_BATCH_SIZE` now sets the matcher batch size. Default stays at 5,000.",
+  "references": [],
+  "url": "https://example.invalid/ledgerline/commit/2b6f9d0"
+}

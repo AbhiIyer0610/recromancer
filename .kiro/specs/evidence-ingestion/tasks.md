@@ -71,13 +71,13 @@ Conventions that apply to every task:
 ## Tasks
 
 - [ ] 1. Group 1: pure core, Ledgerline bundle, ports, fakes, service and properties
-  - [ ] 1.1 Create the domain types and error classes
+  - [x] 1.1 Create the domain types and error classes
     - Create `backend/src/recromancer/domain/evidence.py` with the frozen stdlib dataclasses and aliases from the design: `ItemKind`, `DEFAULT_WORKSPACE_ID`, `FetchBytes`, `Subject`, `EvidenceItem`, `Bundle`, `SourceLocator`, `Chunk`, `EmbeddedChunk`, `ItemWrite`, `StoredItem`, `StoredChunk`. Stdlib only (contract C1).
     - Add `BundleError` and `ChunkingError` to `domain/errors.py`, both `ErrorCode.VALIDATION_ERROR`, each constructor truncating its message to 500 characters so the base-class `ValueError` is never raised. No new `ErrorCode`.
     - Extend `backend/tests/unit/test_errors.py` (or add `test_evidence_errors.py`) for the truncation and the code.
     - _Requirements: 1.9, 3.1, 3.6, 3.12_
 
-  - [ ] 1.2 Implement the Bundle_Reader and `content_hash`
+  - [x] 1.2 Implement the Bundle_Reader and `content_hash`
     - Create `backend/src/recromancer/ingest/bundle.py` with `read_bundle(fetch)`, `content_hash(item)`, the limit constants (`MANIFEST_MAX_BYTES`, `ITEM_MAX_BYTES`, `MAX_FILES`, `TITLE_MAX`, `BODY_MAX`, `REFERENCES_MAX`) and the patterns, imports limited to `domain` and the stdlib (contract C2). The reader performs no I/O itself.
     - Implement algorithm A1 in the stated order: manifest first, then every `files[].path` rule (R1.12), then item files in manifest order, then cross-item checks. First violation wins (R1.13). Per object: unknown field, missing field, then field checks. Use `re.fullmatch` with explicit `[0-9]` ranges and `type(v) is int` for integers.
     - Implement every R1 rule: manifest shape (R1.1), file entries and `doc` entry fields (R1.2), JSON item fields (R1.3), doc bodies from Markdown with `path` equal to the entry path (R1.4), unique ids and resolving references (R1.5), non-subject authors only on `review` items that reference a subject-authored item (R1.6), unknown fields rejected (R1.7), the limits (R1.8), BOM, UTF-8, JSON and size checks (R1.9), CRLF and CR normalisation before hashing (R1.10), manifest order (R1.11).
@@ -86,40 +86,49 @@ Conventions that apply to every task:
     - Implement `content_hash` exactly as algorithm A2 (sorted keys, no whitespace, `ensure_ascii=False`, `null` for the absent one of `url`/`path`, `bundle_id` and subject not hashed).
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 1.10, 1.11, 1.12, 1.13_
 
-  - [ ] 1.3 Implement the Chunker
+  - [x] 1.3 Implement the Chunker
     - Create `backend/src/recromancer/ingest/chunking.py` with `DEFAULT_CHUNK_SIZE = 1000`, `DEFAULT_CHUNK_OVERLAP = 150`, `MAX_CHUNKS_PER_ITEM = 10_000`, `source_text(item)` and `chunk_item(item, size, overlap)` per algorithm A3. Imports limited to `domain` and the stdlib (contract C2); no I/O.
     - Validate parameters first (`size >= 1`, `overlap >= 0`, `overlap < size`, else `ChunkingError`, no chunks). Empty source text returns `()`. Offsets count code points. Raise `ChunkingError` inside the loop as soon as the chunk count exceeds 10000. Chunk id is `<item_id>#<position:04d>`; each chunk carries item id, kind, author, timestamp and a `SourceLocator` with the same offsets and the item's `url` or `path`. Never alter, trim or normalise any character.
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.10, 3.11, 3.12_
 
-  - [ ] 1.4 Create `ingest_cli.py` with the Bundle_Loader only, and enforce it in C8
+  - [x] 1.4 Create `ingest_cli.py` with the Bundle_Loader only, and enforce it in C8
     - Create `backend/src/recromancer/ingest_cli.py` containing only `ledgerline_dir()` (`importlib.resources.files("recromancer.ingest") / "fixtures" / "ledgerline"`) and `make_fetch(root: Traversable) -> FetchBytes`. No `main` yet (added in task 3.3). The module imports only `domain` and the stdlib here.
     - `make_fetch` rejects an absolute path, a backslash, an empty or `..` segment (defence in depth next to the reader), joins segments with `Traversable.joinpath`, for real `Path` roots checks `resolve()` stays under `root.resolve()` (symlink escape), reads at most `max_bytes + 1` bytes in `"rb"`, and maps `FileNotFoundError`, `IsADirectoryError`, `PermissionError` and `OSError` to `BundleError(f"cannot read bundle file {path}")` with no OS text.
     - In `backend/pyproject.toml`, insert `"ingest_cli",` as the first entry of the `layers` list of contract `layer-order` (C8), before `"bootstrap"`. Update `tests/unit/test_import_contracts.py::test_c8_layers_match_documented_order` to the new exact list. Update `.kiro/steering/structure.md`: add `ingest_cli.py` beside `bootstrap` at the top of the layer order and add `ingest/fixtures/` to the layout.
     - Write `backend/tests/unit/test_ingest_cli_loader.py` (BL): path rejections (a fetch spy shows no read happens for an unsafe path, R1.12), the size cap, error mapping without OS text, a backslash path under `tmp_path` that does not touch the environment (R7.7 part), a symlink escape case that skips when symlink creation is not permitted, and a `Traversable` that is not a `Path`. Verify design Risk 10 (`Path.resolve()` containment on Windows drive and UNC paths) and Risk 2 (`importlib.resources.files("recromancer.ingest")` joins a data directory without `__init__.py` on the editable install) and record the results.
     - Run `cd backend; lint-imports` and record `Contracts: 8 kept, 0 broken.`
     - _Requirements: 1.12, 2.11, 7.7_
+    - Notes (task 1.4):
+      - Risk 2 verified: with a probe directory `ingest/_risk2_probe/x.txt` and no `__init__.py`, `importlib.resources.files("recromancer.ingest") / "_risk2_probe"` returned a `WindowsPath` (`is_dir()` True) and `joinpath("x.txt").read_text()` returned `probe-ok` on the editable install. The probe was deleted; `git status --short src` shows no residue.
+      - Risk 10 verified (Python 3.11.9, Windows): with `root = tmp.resolve()` (drive form `C:\...`), `resolve()` plus `is_relative_to(root)` is True for an existing child and for a missing child, and False for `a/../../zz` and for drive-relative `C:foo` (resolves to the current directory). A differently cased drive path resolved to the same canonical case and was True. For the `\\?\C:\...` form only (no network UNC was tried, to avoid a possible hang), `resolve()` keeps the `\\?\` prefix, so it does not equal the plain drive form and `is_relative_to` against a plain-drive root is False. Because `make_fetch` resolves both the root and every joined node from the same root object, the forms always match and containment works; a `\\?\` root compared with itself is True.
+      - `lint-imports`: `Contracts: 8 kept, 0 broken.` (C8 now lists `ingest_cli` first.)
+      - Symlink escape test skipped on this machine (symlink creation is not permitted without privilege); the test skips with a stated reason rather than failing.
 
-  - [ ] 1.5 Create the Ledgerline bundle
+  - [x] 1.5 Create the Ledgerline bundle
     - Create the files under `backend/src/recromancer/ingest/fixtures/ledgerline/`: `manifest.json`, `README.md` (states that everything is fictional), and `commits/`, `pull_requests/`, `reviews/`, `issues/`, `docs/` with 31 items (8 commits, 7 pull requests, 8 reviews, 4 issues, 4 docs), subject `priya-raman` ("Priya Raman", staff backend engineer who left in October 2026, owner of the fictional payments reconciliation service "Ledgerline"), `fictional: true`, manifest order by timestamp, ids such as `pr-0142-remove-redis-cache`, URLs only `https://example.invalid/ledgerline/...`. No `__init__.py`. UTF-8, LF, no BOM.
     - Plant the facts: the Redis removal (a pull request authored by the subject plus two review items on it, one by another author and one reply by the subject, one of them stating the reason); the idempotency keys (an incident issue stating the reason and a commit whose `references` include the issue id); the design review (a doc plus a subject-authored review referencing the doc and stating the objection and its reason). Non-subject items are only `review` items referencing a subject-authored item.
     - Plant the silences: no title or body matches `kubernetes|k8s|helm|hire|hiring|recruit|interview|candidate|headcount` (case-insensitive). No real person or company name.
     - Add `backend/src/recromancer/ingest/fixtures/** text eol=lf` to `.gitattributes` (R2.10).
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.10_
 
-  - [ ] 1.6 Write Bundle_Reader tests including EX-VIOLATIONS
+  - [x] 1.6 Write Bundle_Reader tests including EX-VIOLATIONS
     - Create `backend/tests/unit/test_bundle_reader.py` using hand-written in-memory bundles served through a fake `fetch`. Cover a valid bundle, the doc path (R1.4), order (R1.11) and the limits at the limit and at limit plus one (R1.8), the two-violation cases that prove first-violation order (R1.13), and the decision 11 rules with one example case per rule (duplicate keys, `NaN`, duplicate manifest path, `NUL`, lone surrogate, bad subject handle, item `path` rule, empty hostname, empty `files`, normalised length, unlisted file never fetched).
     - **EX-VIOLATIONS** (parametrized): one case per R1 violation (unknown manifest field, unknown item field, wrong `kind`, bad Item_Id, bad author, bad timestamp, both or neither of `url` and `path`, non-https url, duplicate id, dangling reference, non-subject author on a non-review or without a subject reference, missing file, BOM, invalid UTF-8, invalid JSON, unsafe `path`, title too long, too many references). Each case mutates one file of a valid bundle that contains a body sentinel and a Markdown sentinel, and asserts `BundleError`, that the message names the file and the field, and that it contains neither sentinel.
     - Named test `test_error_messages_never_contain_body_text` (R1.9).
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 1.10, 1.11, 1.12, 1.13_
 
-  - [ ] 1.7 Write the Ledgerline tests and the golden hash file
+  - [x] 1.7 Write the Ledgerline tests and the golden hash file
     - Create `backend/tests/unit/test_ledgerline.py` (LG), reading through `make_fetch(ledgerline_dir())`: 30 to 32 items, at least 2 of each kind, subject and `fictional` flag, README presence and fictional label, only `https` URLs with host `example.invalid`, the three planted facts resolve by id with the reason keywords in the stated items, the word scan fails on any case-insensitive match of the R2.7 list in any title or body, no real names, twice-read equality of items and hashes, no BOM and no CR byte in any fixture file, and that `.gitattributes` contains the LF line.
     - Create `backend/tests/unit/data/ledgerline_hashes.json` (item id to Content_Hash) and compare against it, with the regeneration PowerShell one-liner documented in the test file docstring (decision 17).
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 2.10_
 
-  - [ ] 1.8 Write the package-data wheel test PK
+  - [x] 1.8 Write the package-data wheel test PK
     - Create `backend/tests/integration/test_wheel_package_data.py`: skip with a stated reason when `hatchling` is not importable; otherwise run `python -m hatchling build -t wheel -d <tmp>` for `backend/` through `subprocess` (no shell, under 60 seconds), open the zip, and assert every path in the Ledgerline manifest plus the manifest and README exist under `recromancer/ingest/fixtures/ledgerline/`. Verify design Risk 1 (hatchling includes non-`.py` files and honours `.gitignore`) and record the result.
     - _Requirements: 2.11_
+    - **Notes (task 1.8)**
+      - Per user override the test builds the wheel with `pip wheel --no-deps <backend>` via `subprocess` (no shell, 50 s timeout) and does not import hatchling. `test_packaging.py` has no wheel build to reuse; the command comes from the platform-foundation design. pip isolation downloads hatchling, so the test needs the package index.
+      - Risk 1 result: yes. The wheel holds 33 entries under `recromancer/ingest/fixtures/` and the source tree holds 33 files (31 manifest `files[]` entries plus `manifest.json` and `README.md`). Every entry is byte-identical to its source file and no `__init__.py` was added.
+      - `.gitignore` point: `git check-ignore -v` reports nothing for the fixture files. The root `.gitignore` has no pattern that matches them (its only data-like entry is `.pgdata/`). The other `.gitignore` files found are tool caches (`.hypothesis`, `.mypy_cache`, `.pytest_cache`, `.ruff_cache`, `.import_linter_cache`, `.idea`).
 
   - [ ] 1.9 Add the ports and the fakes
     - Add the `Embedder` and `EvidenceStore` protocols to `backend/src/recromancer/service/ports.py` exactly as in the design (`model_id`, `dimensions`, async `embed`; `signatures`, `replace_item`, `get_item`, `get_chunks`). Imports `domain` only.

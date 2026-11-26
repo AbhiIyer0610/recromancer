@@ -1,0 +1,10 @@
+{
+  "id": "issue-0211-stale-balances-after-import",
+  "kind": "issue",
+  "author": "priya-raman",
+  "timestamp": "2025-10-20T09:30:12Z",
+  "title": "Stale account balances in three reconciliation runs",
+  "body": "## Summary\n\nThree reconciliation runs (2025-09-29, 2025-10-06 and 2025-10-14) reported balances that were out of date by the amount of that night's settlement. Total mis-statement across the three runs was €1,204.50.\n\n## What we know\n\n- The balance reader serves snapshots from the cache.\n- The nightly import updates the ledger and then deletes the affected cache keys.\n- The matcher starts at 02:30 and sometimes reads a key between the ledger write and the delete, then writes the old value back. The stale value survives until the next import.\n\n## Impact\n\nFinance saw false exceptions and spent time clearing them by hand. No money moved incorrectly.\n\n## Next step\n\nFix the race or remove the cache. I am measuring how much the cache helps before choosing.",
+  "references": [],
+  "url": "https://example.invalid/ledgerline/issues/211"
+}

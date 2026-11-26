@@ -1,0 +1,10 @@
+{
+  "id": "commit-3d9e5a7-currency-metadata-lru",
+  "kind": "commit",
+  "author": "priya-raman",
+  "timestamp": "2025-05-12T13:47:18Z",
+  "title": "Cache currency metadata in process with a small LRU",
+  "body": "Currency decimals and symbols were read from the reference table for every row. There are about 180 currencies, so a `functools.lru_cache(maxsize=256)` holds all of them.\n\nThe data never changes inside a deploy, so there is nothing to invalidate. Import time on the sample file drops from 41 s to 29 s.",
+  "references": [],
+  "url": "https://example.invalid/ledgerline/commit/3d9e5a7"
+}

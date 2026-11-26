@@ -1,0 +1,12 @@
+{
+  "id": "review-rfc-multi-currency-priya-objection",
+  "kind": "review",
+  "author": "priya-raman",
+  "timestamp": "2026-03-05T14:33:20Z",
+  "title": "Review notes on the multi-currency ledger RFC: I object to read-time FX with stored floats",
+  "body": "I object to the proposal as written, specifically to computing FX at read time and storing the converted result as floats.\n\n**Why.** Reconciliation has to be reproducible. If finance reruns the report for March in August, they must get exactly the same figures as in April, because auditors compare the two. With read-time conversion the answer depends on whichever rate happens to be current, and a double precision column adds rounding that varies with the query plan and the database version. Two correct runs can disagree in the last digits, and a reconciliation that cannot be repeated is not a reconciliation.\n\n**What I recommend instead.** Store the original amount in integer minor units, the currency, and a rate id that points to an immutable row in a rates table. Derive the converted value from those three things when needed. Then any past report can be rebuilt exactly, a wrong rate is fixed by adding a new rate row and a new rate id, and nothing is overwritten. This is Option B in the RFC.\n\nI am fine with the extra join. I am not fine with losing the ability to explain a number a year later.",
+  "references": [
+    "doc-rfc-multi-currency-ledger"
+  ],
+  "url": "https://example.invalid/ledgerline/docs/rfc-multi-currency-ledger/reviews/1"
+}

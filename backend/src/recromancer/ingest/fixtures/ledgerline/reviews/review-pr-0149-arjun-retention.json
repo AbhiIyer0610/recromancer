@@ -1,0 +1,12 @@
+{
+  "id": "review-pr-0149-arjun-retention",
+  "kind": "review",
+  "author": "arjun-pale",
+  "timestamp": "2026-01-22T09:40:23Z",
+  "title": "Review of PR 149: retention and key format",
+  "body": "Reads well. Two things.\n\n1. Why 24 hours? I would have guessed 7 days to be safe.\n2. Should we cap the key length? A 10 MB header would be stored as is.\n\nOtherwise ship it.",
+  "references": [
+    "pr-0149-idempotency-key-header"
+  ],
+  "url": "https://example.invalid/ledgerline/pull/149/reviews/1"
+}

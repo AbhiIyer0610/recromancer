@@ -1,0 +1,14 @@
+{
+  "id": "pr-0149-idempotency-key-header",
+  "kind": "pull_request",
+  "author": "priya-raman",
+  "timestamp": "2026-01-20T15:55:48Z",
+  "title": "Idempotency-Key header on posting endpoints",
+  "body": "## What\n\nImplements the decision in issue 233: a required `Idempotency-Key` header on every endpoint that posts to the ledger, backed by a unique constraint and a 24-hour retention window.\n\n## How\n\n- Middleware reads the header and looks up `(endpoint, key)` inside the request's transaction.\n- First sight: handle the request, store the response, commit.\n- Repeat with the same fingerprint: return the stored response.\n- Repeat with a different fingerprint: 422.\n\n## Testing\n\n- Concurrency test with 20 parallel identical requests: exactly one posting, 19 stored responses.\n- Replay of the 2026-01-09 payload pair: one posting.\n- Key reuse with a different body: 422.",
+  "references": [
+    "issue-0233-duplicate-settlement-webhook",
+    "commit-9c21d7b-require-idempotency-key",
+    "commit-e17a6c4-idempotency-unique-constraint"
+  ],
+  "url": "https://example.invalid/ledgerline/pull/149"
+}

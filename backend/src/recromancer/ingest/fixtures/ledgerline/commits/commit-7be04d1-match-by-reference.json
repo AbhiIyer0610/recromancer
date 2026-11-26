@@ -1,0 +1,10 @@
+{
+  "id": "commit-7be04d1-match-by-reference",
+  "kind": "commit",
+  "author": "priya-raman",
+  "timestamp": "2025-03-18T16:40:09Z",
+  "title": "Match settlement lines to ledger entries by reference and amount",
+  "body": "Match on processor reference first, then on amount within the same account. Lines with no match are written to `exceptions` with the reason.\n\nAmounts compare as integer cents. No float math anywhere in the matcher.",
+  "references": [],
+  "url": "https://example.invalid/ledgerline/commit/7be04d1"
+}

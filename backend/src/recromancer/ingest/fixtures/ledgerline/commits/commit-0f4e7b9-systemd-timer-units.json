@@ -1,0 +1,12 @@
+{
+  "id": "commit-0f4e7b9-systemd-timer-units",
+  "kind": "commit",
+  "author": "priya-raman",
+  "timestamp": "2026-06-03T10:18:27Z",
+  "title": "Add systemd units for the nightly jobs",
+  "body": "Adds service and timer unit files for import, match, report and purge, plus a note in the runbook about moving them to the second VM.\n\nAll services are `Type=oneshot` with a three hour start timeout. Timers use `Persistent=true` so a missed run starts at boot.",
+  "references": [
+    "doc-deployment-runbook"
+  ],
+  "url": "https://example.invalid/ledgerline/commit/0f4e7b9"
+}

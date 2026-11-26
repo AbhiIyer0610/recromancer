@@ -1,0 +1,13 @@
+{
+  "id": "commit-e17a6c4-idempotency-unique-constraint",
+  "kind": "commit",
+  "author": "priya-raman",
+  "timestamp": "2026-01-16T13:26:14Z",
+  "title": "Add idempotency_keys table with a unique constraint",
+  "body": "Migration 0034. The unique constraint on `(endpoint, key)` is what makes the check safe under concurrency: the second insert fails and the handler returns the stored response.\n\nRetention is 24 hours; the purge job comes in a later commit.",
+  "references": [
+    "issue-0233-duplicate-settlement-webhook",
+    "commit-9c21d7b-require-idempotency-key"
+  ],
+  "url": "https://example.invalid/ledgerline/commit/e17a6c4"
+}

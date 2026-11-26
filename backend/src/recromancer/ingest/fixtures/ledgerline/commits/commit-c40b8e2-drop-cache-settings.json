@@ -1,0 +1,12 @@
+{
+  "id": "commit-c40b8e2-drop-cache-settings",
+  "kind": "commit",
+  "author": "priya-raman",
+  "timestamp": "2025-11-17T10:21:05Z",
+  "title": "Remove cache connection settings after the cache removal",
+  "body": "Follow-up to PR 142. Deletes the cache URL variable, its entry in `.env.example` and the container definition from the compose file used in staging.\n\nNothing in the code reads these settings any more.",
+  "references": [
+    "pr-0142-remove-redis-cache"
+  ],
+  "url": "https://example.invalid/ledgerline/commit/c40b8e2"
+}

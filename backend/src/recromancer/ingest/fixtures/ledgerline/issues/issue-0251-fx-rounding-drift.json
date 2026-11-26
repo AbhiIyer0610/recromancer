@@ -1,0 +1,12 @@
+{
+  "id": "issue-0251-fx-rounding-drift",
+  "kind": "issue",
+  "author": "priya-raman",
+  "timestamp": "2026-03-20T12:12:12Z",
+  "title": "Sandbox FX totals differ by one cent between two runs",
+  "body": "## Summary\n\nTwo runs of the sandbox report for the same day differ by €0.01 in the consolidated total. The inputs are identical.\n\n## Details\n\nThe prototype stores converted values as floats. Summing them in a different order, which the planner is free to do, gives a different last digit. This is the behaviour I warned about in the RFC review.\n\n## Proposal\n\nStore the rate id with the original amount and compute conversions with decimal arithmetic. Tracked in PR 163.",
+  "references": [
+    "doc-rfc-multi-currency-ledger"
+  ],
+  "url": "https://example.invalid/ledgerline/issues/251"
+}
