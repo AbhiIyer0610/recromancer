@@ -70,7 +70,7 @@ Conventions that apply to every task:
 
 ## Tasks
 
-- [ ] 1. Group 1: pure core, Ledgerline bundle, ports, fakes, service and properties
+- [x] 1. Group 1: pure core, Ledgerline bundle, ports, fakes, service and properties
   - [x] 1.1 Create the domain types and error classes
     - Create `backend/src/recromancer/domain/evidence.py` with the frozen stdlib dataclasses and aliases from the design: `ItemKind`, `DEFAULT_WORKSPACE_ID`, `FetchBytes`, `Subject`, `EvidenceItem`, `Bundle`, `SourceLocator`, `Chunk`, `EmbeddedChunk`, `ItemWrite`, `StoredItem`, `StoredChunk`. Stdlib only (contract C1).
     - Add `BundleError` and `ChunkingError` to `domain/errors.py`, both `ErrorCode.VALIDATION_ERROR`, each constructor truncating its message to 500 characters so the base-class `ValueError` is never raised. No new `ErrorCode`.
@@ -130,13 +130,13 @@ Conventions that apply to every task:
       - Risk 1 result: yes. The wheel holds 33 entries under `recromancer/ingest/fixtures/` and the source tree holds 33 files (31 manifest `files[]` entries plus `manifest.json` and `README.md`). Every entry is byte-identical to its source file and no `__init__.py` was added.
       - `.gitignore` point: `git check-ignore -v` reports nothing for the fixture files. The root `.gitignore` has no pattern that matches them (its only data-like entry is `.pgdata/`). The other `.gitignore` files found are tool caches (`.hypothesis`, `.mypy_cache`, `.pytest_cache`, `.ruff_cache`, `.import_linter_cache`, `.idea`).
 
-  - [ ] 1.9 Add the ports and the fakes
+  - [x] 1.9 Add the ports and the fakes
     - Add the `Embedder` and `EvidenceStore` protocols to `backend/src/recromancer/service/ports.py` exactly as in the design (`model_id`, `dimensions`, async `embed`; `signatures`, `replace_item`, `get_item`, `get_chunks`). Imports `domain` only.
     - Add `FakeEmbedder` and `FakeEvidenceStore` to `backend/tests/fakes.py` per the design: blake2b-derived deterministic unit vectors with call and text counters and `fail_on_call`; dictionaries keyed like the Postgres primary key, atomic swap on `replace_item`, dimension validation, failure injection by constructor argument (`fail_on_item_ids`), deterministic `snapshot()`.
     - Write `backend/tests/unit/test_fake_embedder.py` (FK): dimension, norm 1.0 within 1e-6, dependence on text only, `embed([])` returns `[]` and records the call, counters, small Hypothesis checks.
     - _Requirements: 4.1, 4.7, 4.8, 5.7, 6.1_
 
-  - [ ] 1.10 Implement the IngestionService and its tests including EX-REINGEST
+  - [x] 1.10 Implement the IngestionService and its tests including EX-REINGEST
     - Create `backend/src/recromancer/service/ingestion.py` with `IngestReport`, `IngestError` (`ErrorCode.DEPENDENCY_UNAVAILABLE`, message `ingest failed at item <id>: items=<n> chunks=<n> unchanged=<n> absent=<n>`), `ingest_signature` (`v1|<hash>|<size>|<overlap>|<model_id>`) and `IngestionService` per algorithm A4. Imports `domain`, `service.ports`, the stdlib and `structlog` only (contract C4); `read` and `chunk` are injected callables; `ingested_at` comes from the injected `Clock`; no `random` or `uuid`.
     - Behaviour: one embedder batch per item; skip when the stored signature equals the new one; replace atomically otherwise; on any `Exception` stop, keep earlier commits, leave that item's old state, raise `IngestError` from `None`; stored items absent from the bundle are kept and counted; other `bundle_id`s are untouched; one INFO summary on success, per-item DEBUG events with ids and lengths only; an invalid bundle writes nothing.
     - Write `backend/tests/unit/test_ingestion_service.py` (IS) with `FakeClock`, `FakeEmbedder`, `FakeEvidenceStore`: write, skip, replace, failure injection with counts and earlier items kept (R6.6), absent counting, other-bundle isolation, stored `ingested_at` equals the fake clock, an AST check that the module imports no `random` or `uuid`, invalid bundle leaves the store empty.
@@ -144,47 +144,72 @@ Conventions that apply to every task:
     - Named test `test_logs_contain_no_title_body_or_chunk_text` (R6.9): sentinel text in titles and bodies, scan the `log_stream` output at DEBUG for success and for an injected failure.
     - _Requirements: 6.1, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 6.10_
 
-  - [ ] 1.11 Add property strategies, invariants and the generator-validity test
+  - [x] 1.11 Add property strategies, invariants and the generator-validity test
     - Extend the existing `backend/tests/property/strategies.py` and `backend/tests/property/invariants.py` (keep their current contents) (no test functions in `invariants.py`) with every shared helper the four properties need: `assert_lossless_cover`, `assert_boundary_rule` (an independent oracle scanning with explicit loops from `hi` downward, not `str.rfind`), chunk-id invariants, a CRLF rewrite helper, and a store-snapshot comparison helper.
     - Strategies follow the design's shared generator rules: text mixed with `"\n"`, `"\n\n"`, space, tab, `"\u00e9"`, `"\U0001F680"` and excluding surrogates and `NUL`; a composite that draws `size` then `overlap` in `[0, size - 1]`; a constructive bundle composite (unique Item_Ids, subject-authored items first, non-subject items only as `review` with a subject reference, `https://example.invalid/...` urls or paths, whole-second UTC timestamps) serialised with `json.dumps` and served through a fake `fetch`. Failure injection is by constructor argument, never by text.
     - Create `backend/tests/property/test_bundle_reader_properties.py` (PR) with the generator-validity test: every generated bundle passes `read_bundle` and keeps manifest order (R1.11, R8.9). Verify design Risk 12 (Hypothesis health checks on 5000 to 20000 character texts) here and record any needed `suppress_health_check`.
     - _Requirements: 1.11, 8.1, 8.9_
+    - Notes (task 1.11):
+      - Risk 12 verified: `test_long_lf_texts_generate_without_health_check_errors` draws `long_lf_texts()` (5000 to 20000 characters, no CR) under the default profile (100 examples) with no `suppress_health_check`, and it passes. `long_lf_texts()` draws a target length, up to 6 short pieces and up to 6 separators, then repeats them in a loop, so no single large text draw occurs (no `large_base_example` or `too_slow`). The bundle validity test also needs no suppression.
+      - Oracle check: a one-off run of 300 examples of `evidence_items()` with `chunk_params()` and bodies from `chunk_texts()` or `long_lf_texts()` through `chunk_item` passed `assert_lossless_cover`, `assert_boundary_rule`, `assert_chunk_ids` and `assert_chunk_metadata`. R3.4 and `chunking.py` agree; no disagreement found.
+      - `chunk_texts()` also excludes `\r` and `\ufeff` (a leading U+FEFF in a Markdown body would encode to a BOM and be rejected).
 
-  - [ ] 1.12 Write chunking tests, EX-PARAMS and Property 1
+  - [x] 1.12 Write chunking tests, EX-PARAMS and Property 1
     - Create `backend/tests/unit/test_chunking.py` (CH) with fixed boundary examples (empty, length `size`, length `size + 1`, only `"\n"`, `"\n\n"` straddling `lo` and `hi`, `overlap = 0`, `overlap = size - 1`, `size = 1`, `size = 2`) and **EX-PARAMS** (parametrized): `size = 0`, `size = -1`, `overlap = -1`, `overlap = size`, `overlap = size + 1` raise `ChunkingError` and return nothing; `size = 1, overlap = 0` and `size = 5, overlap = 4` return chunks; `size = 2, overlap = 1` with a 10002-character item raises `ChunkingError`.
     - Create `backend/tests/property/test_chunking_properties.py::test_chunks_cover_text_without_loss`, tagged `# Feature: evidence-ingestion, Property 1: Chunking covers the text without loss and follows the boundary rule`. It uses `assert_lossless_cover` and `assert_boundary_rule` over texts including empty, whitespace-only, multi-byte and LF-only 5000 to 20000 character inputs.
     - **Mutation_Checks** (R8.5, R8.6), recorded as a comment beside the property: (a) drop the final character of the last chunk; (b) start the next chunk at `E + 1` instead of `E - overlap`; (c) use `rfind(..., lo, hi + 1)`. For each: apply it to `chunking.py`, confirm Property 1 fails, revert, and record the result in the task notes. Verify design Risk 11 (`str.isspace()` agreement with the oracle).
     - **Property 1: Chunking covers the text without loss and follows the boundary rule**
     - **Validates: Requirements 3.2, 3.3, 3.4, 3.5, 3.7, 3.8, 3.10, 3.11, 8.2**
     - _Requirements: 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.10, 3.11, 3.12, 8.2, 8.5, 8.6_
+    - Notes (task 1.12):
+      - Original SHA256 of `chunking.py`: `3BEC3C415C62D1B00326DE1DC8644C344AC0790445BF3A776211615654F8305F`. After every restore the hash was the same (match: yes), and the property passed after the restores of (a) and (c); the final hash after all work also matches. For (b) the post-restore pass is covered by the final run of both files (39 passed).
+      - Mutation (a): in the final branch `end = n` became `end = n - 1`. Failed with `AssertionError: last end 1 != text length 2` (also `chunk 0: bad offsets 0..0`). Shrunk example: a two-character whitespace text in one chunk. Restored: yes, hash match yes, property passes.
+      - Mutation (b): `start = end - overlap` became `start = end + 1`. Failed with `AssertionError: chunk 1: start 2 != previous end 1 - overlap 0` (also `chunk 1: bad offsets 2..2`). Shrunk example: title `'   '` (three spaces), overlap 0. Restored: yes, hash match yes. Procedure slip: I copied the mutated file over `$env:TEMP\chunking.py.orig` once, so I reverted this edit by hand; the hash then equalled the original before the backup was taken again. The mutated hash was `2F648DBD1B172E1D143DF549EB006731AA55A9F12FDD690B551EC2F465E8B88D`.
+      - Mutation (c): `rfind("\n\n", lo, hi)` and `rfind("\n", lo, hi)` both changed to `hi + 1` (two edits applied before the single run). Failed with `AssertionError: chunk 0: end 2 != expected 1` (also `chunk 1: bad offsets 2..2`). Shrunk example: title `' \n '`. Restored: yes, hash match yes, property passes.
+      - Generator strengthening: built in from the start rather than added after a surviving mutation. The property draws from `chunk_texts`, whitespace-only text, empty text, `long_lf_texts` and a local `_dense_texts` (short texts of `\n`, `\n\n`, space, tab, `\u00e9`, emoji and letters), with extra weight on sizes 1 to 30 so breaks fall at every offset around the window edge. Long texts use `size` 20 to 1000 and `overlap <= size // 2`. A `ChunkingError` is accepted only when the text is longer than 10000 characters. I did not run (c) against the weaker generator, so I cannot say whether it was needed.
+      - Risk 11 verified: the oracle and `chunking.py` both use `str.isspace()`. `"\x1c"`, `"\x85"`, `"\u2028"` and `"\u3000"` are all `isspace()` and `test_whitespace_snap_uses_str_isspace` shows the whitespace snap ends the chunk right after each. No disagreement.
+      - EX-PARAMS size 2, overlap 1: a 10002-character source gives chunk starts 0..10000, 10001 chunks, so `ChunkingError`; 10001 characters give exactly 10000 chunks and are accepted (both tested; the files run in under 1 s).
 
-  - [ ] 1.13 Write Property 2: chunk ids
+  - [x] 1.13 Write Property 2: chunk ids
     - In `backend/tests/property/test_chunking_properties.py` add `test_chunk_ids_are_deterministic_and_unique`, tagged `# Feature: evidence-ingestion, Property 2: Chunk ids are deterministic, well formed and unique`. Assert `<item_id>#<position:04d>` format, pairwise distinct ids within an item and across a bundle, and equal chunk tuples on a second run. Boundary cases: items whose ids are prefixes of each other (`abc`, `abc.1`), single-chunk and multi-chunk items.
     - **Mutation_Check** (R8.5, R8.6): build the chunk id from the position alone; confirm the uniqueness assertion fails, revert, record the result in the task notes.
     - **Property 2: Chunk ids are deterministic, well formed and unique**
     - **Validates: Requirements 3.6, 3.9, 8.2**
     - _Requirements: 3.6, 3.9, 8.2, 8.5, 8.6_
+    - Notes (task 1.13):
+      - Mutation: in `chunking.py` the id became `chunk_id=f"{position:04d}"` (position alone). Failing assertion: the cross-item uniqueness assertion (`chunk ids collide across items`, `assert 8 == 4`), which the test checks before the within-item and format assertions. Falsifying example: the explicit `@example` with items `abc` (`a b c d e`) and `abc.1` (`f g h i j`), size 3, overlap 1; ids `0000..0003` appear twice.
+      - Original SHA256 of `chunking.py`: `3BEC3C415C62D1B00326DE1DC8644C344AC0790445BF3A776211615654F8305F`. Restored SHA256: `3BEC3C415C62D1B00326DE1DC8644C344AC0790445BF3A776211615654F8305F` (match: yes). After the restore the property passes (2 passed in the file).
+      - Generator: 2 to 6 items with distinct ids drawn from prefix-related ids (`abc`, `abc.1`, `abc.1.1`, `abc-1`, `a`, `a.1`) or a generated id; titles from `_dense_texts` with sizes 1 to 30, so items give zero, one or many chunks. The property also asserts determinism (a second `chunk_item` run returns an equal tuple).
 
-  - [ ] 1.14 Write Property 3: content hash
+  - [x] 1.14 Write Property 3: content hash
     - Create `backend/tests/property/test_content_hash_properties.py` with `test_content_hash_ignores_line_endings_and_reacts_to_changes`, tagged `# Feature: evidence-ingestion, Property 3: Content_Hash ignores line-ending style and reacts to every content field`. Serialise each valid item with LF and with CRLF or lone CR in `title` and `body` (and Markdown bytes for docs), read both, and assert equal items and hashes; for a single change to `title`, `body`, `author`, `timestamp` or `references` that gives a different normalised value (drawn with `.filter(lambda v: v != original)`) assert the hash differs. Boundary cases: empty body, text ending in `\r`, `\r\r\n`.
     - **Mutation_Checks** (R8.5, R8.6): (a) skip line-ending normalisation before hashing, which must fail the CRLF half; (b) hash only `title` and `body`, which must fail the sensitivity half for `author`. For each: apply, confirm failure, revert, record in the task notes.
     - **Property 3: Content_Hash ignores line-ending style and reacts to every content field**
     - **Validates: Requirements 1.10, 8.4**
     - _Requirements: 1.10, 8.4, 8.5, 8.6_
+    - Notes (task 1.14):
+      - Generator: a commit (JSON), an issue (JSON) and a doc (manifest entry plus Markdown bytes) in one bundle; the subject handle equals the drawn author, so every item stays subject-authored and an author change stays valid. Texts mix `a b é`, LF and CR, with weighted boundary values (empty, `\r`, `a\r`, `\r\r\n`, `a\r\r\nb`, `\r\n`, `\n\r`). Line-ending half: the LF form is read against CRLF, lone CR and raw forms. Sensitivity half: `st.sampled_from` over the five fields, new value drawn with `.filter` on the normalised value (timestamp and author on the raw value); asserts the commit hash differs, and the issue and doc hashes differ too unless the field is `references`. Default profile, about 0.8 s.
+      - Mutation (a): in `bundle.py` `_normalise` became `return s`. Failing assertion: `AssertionError: items differ between LF and other line endings` (the item equality assertion, `title='\n'` versus `title='\r\n'`). Falsifying example: `change=(_Content(title='\r', body='', author='1', timestamp=2000-01-01T00:00Z, references=()), 'author', <same with author='0'>), style='crlf'`. No other validation rejected the CRLF input first.
+      - Mutation (b): `payload` in `content_hash` became `{"title": _normalise(item.title), "body": _normalise(item.body)}`. Failing assertion: `AssertionError: commit hash ignores author`. Falsifying example: `change=(_Content(title='a', body='', author='8', timestamp=2000-01-01T00:00Z, references=()), 'author', <same with author='0'>), style='crlf'`. Hashes were equal (`20459e94...bdd8`). The field was drawn from the five-field `sampled_from` and author was found on the first failing run.
+      - Original SHA256 of `bundle.py`: `191FAE5E739AA74511A5FFD3470BEBC2E0E24416626B7B2E0A523E2EA540800B`. Restored SHA256 after (a) and after (b): `191FAE5E739AA74511A5FFD3470BEBC2E0E24416626B7B2E0A523E2EA540800B` (match: yes, both). After each restore the property passes (1 passed).
 
-  - [ ] 1.15 Write Property 4: idempotent ingestion
+  - [x] 1.15 Write Property 4: idempotent ingestion
     - Create `backend/tests/property/test_ingestion_properties.py` with `test_ingesting_twice_changes_nothing`, tagged `# Feature: evidence-ingestion, Property 4: Ingesting a bundle twice changes nothing`. Use `anyio` with the `FakeClock` advanced between runs, the `FakeEmbedder` and `FakeEvidenceStore`: after the second run `snapshot()` equals the first (including `ingested_at` and signatures), the second report has `chunks == 0` and `unchanged == items`, and the embedder counters did not change. Boundary cases: zero items, one item, one chunk and many chunks.
     - **Mutation_Check** (R8.5, R8.6): add `ingested_at` to the Ingest_Signature; confirm the property fails (second run re-embeds), revert, record the result in the task notes.
     - **Property 4: Ingesting a bundle twice changes nothing**
     - **Validates: Requirements 6.3, 6.4, 6.8, 8.3**
     - _Requirements: 6.3, 6.4, 6.8, 8.3, 8.5, 8.6, 8.7_
+    - Notes (task 1.15):
+      - Test: synchronous `@given(bundles(), params)` calling `anyio.run` twice, with `FakeClock.advance(hours=1)` between runs. `params` is `chunk_params()` or the defaults (1000, 150). An `@example` covers the zero-item bundle; one-item and many-chunk cases come from the generators (0 to 6 items, sizes down to 1). Default profile, about 2 s.
+      - Mutation: in `ingestion.py` `ingest()` the signature became `ingest_signature(...) + "|" + self._clock.now().isoformat()`. The property failed at its first assertion, `assert store.snapshot() == snapshot` (`AssertionError`), because run 2 saw a different signature, re-embedded and rewrote the item with a new signature and `ingested_at` (logs show `ingest_item_written` twice per bundle, `unchanged=0`). Falsifying example: one commit item `a00` (bundle `a00`, subject `a`), params `(1000, 150)`. The zero-item example cannot fail under this mutation, and Hypothesis found the non-empty case.
+      - Original SHA256 of `ingestion.py`: `A279C82F03984975BAC09B9CA4042566D92DEA5774B86FDD12D4D5B76753A535`. Restored SHA256: `A279C82F03984975BAC09B9CA4042566D92DEA5774B86FDD12D4D5B76753A535` (match: yes). After the restore the property passes (1 passed).
 
-  - [ ] 1.16 Write the Ledgerline planted-facts ingestion test (R8.8)
+  - [x] 1.16 Write the Ledgerline planted-facts ingestion test (R8.8)
     - Add to `backend/tests/unit/test_ledgerline.py` (or a new `test_ledgerline_ingest.py`) a test that reads the Ledgerline bundle through `make_fetch(ledgerline_dir())`, builds an `IngestionService` directly with `read_bundle`, `functools.partial(chunk_item, size=DEFAULT_CHUNK_SIZE, overlap=DEFAULT_CHUNK_OVERLAP)`, the `FakeEmbedder`, a `FakeEvidenceStore` and a `FakeClock`, ingests it, and asserts that the planted facts of R2.4, R2.5 and R2.6 resolve to existing Item_Ids in the store with at least one stored chunk each, and that the report counts equal the item count and `unchanged == 0`.
     - This is the last functional sub-task of the group; the gate follows.
     - _Requirements: 2.4, 2.5, 2.6, 8.8_
 
-  - [ ] 1.17 Group 1 gate
+  - [x] 1.17 Group 1 gate
     - Run the gate twice as described under Conventions (database URL unset, then set). Group 1 has no Postgres tests, so both runs must pass with the same counts.
     - Confirm `lint-imports` prints `Contracts: 8 kept, 0 broken.` and the coverage floor holds. Report the final-message items (files changed, gate lines, mutation results, skips).
     - _Requirements: 3.1, 5.7, 6.1, 8.1, 8.7_

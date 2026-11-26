@@ -96,6 +96,121 @@
         "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
         "timestamp": 1795630517806
       }
+    ],
+    "1.9 Add the ports and the fakes": [
+      {
+        "executionId": "34d898d2-c9d1-4ebe-83e4-01cb68d33244",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795708162042
+      },
+      {
+        "executionId": "34d898d2-c9d1-4ebe-83e4-01cb68d33244",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795711880609
+      }
+    ],
+    "1.10 Implement the IngestionService and its tests including EX-REINGEST": [
+      {
+        "executionId": "34d898d2-c9d1-4ebe-83e4-01cb68d33244",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795711881098
+      },
+      {
+        "executionId": "34d898d2-c9d1-4ebe-83e4-01cb68d33244",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795712038416
+      }
+    ],
+    "1.11 Add property strategies, invariants and the generator-validity test": [
+      {
+        "executionId": "34d898d2-c9d1-4ebe-83e4-01cb68d33244",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795712038960
+      },
+      {
+        "executionId": "34d898d2-c9d1-4ebe-83e4-01cb68d33244",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795712294703
+      }
+    ],
+    "1.12 Write chunking tests, EX-PARAMS and Property 1": [
+      {
+        "executionId": "34d898d2-c9d1-4ebe-83e4-01cb68d33244",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795712295123
+      },
+      {
+        "executionId": "34d898d2-c9d1-4ebe-83e4-01cb68d33244",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795712654746
+      }
+    ],
+    "1.13 Write Property 2: chunk ids": [
+      {
+        "executionId": "34d898d2-c9d1-4ebe-83e4-01cb68d33244",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795712659890
+      },
+      {
+        "executionId": "34d898d2-c9d1-4ebe-83e4-01cb68d33244",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795712861334
+      }
+    ],
+    "1.14 Write Property 3: content hash": [
+      {
+        "executionId": "34d898d2-c9d1-4ebe-83e4-01cb68d33244",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795712861401
+      },
+      {
+        "executionId": "34d898d2-c9d1-4ebe-83e4-01cb68d33244",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795713203230
+      }
+    ],
+    "1.15 Write Property 4: idempotent ingestion": [
+      {
+        "executionId": "34d898d2-c9d1-4ebe-83e4-01cb68d33244",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795713223464
+      },
+      {
+        "executionId": "34d898d2-c9d1-4ebe-83e4-01cb68d33244",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795713433169
+      }
+    ],
+    "1.16 Write the Ledgerline planted-facts ingestion test (R8.8)": [
+      {
+        "executionId": "34d898d2-c9d1-4ebe-83e4-01cb68d33244",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795713433239
+      },
+      {
+        "executionId": "34d898d2-c9d1-4ebe-83e4-01cb68d33244",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795713516571
+      }
+    ],
+    "1.17 Group 1 gate": [
+      {
+        "executionId": "34d898d2-c9d1-4ebe-83e4-01cb68d33244",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795713517569
+      },
+      {
+        "executionId": "34d898d2-c9d1-4ebe-83e4-01cb68d33244",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795713803544
+      }
+    ],
+    "1. Group 1: pure core, Ledgerline bundle, ports, fakes, service and properties": [
+      {
+        "executionId": "34d898d2-c9d1-4ebe-83e4-01cb68d33244",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795713803615
+      }
     ]
   }
 }
