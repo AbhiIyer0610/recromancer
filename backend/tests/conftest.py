@@ -4,6 +4,7 @@ import io
 import logging
 from collections.abc import Iterator
 
+import psycopg
 import pytest
 import structlog
 from hypothesis import settings
@@ -23,17 +24,31 @@ def anyio_backend() -> str:
     return "asyncio"
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def postgres_url() -> str:
     """Database URL from the real process environment, or skip the test."""
     url = config.read_environment().get("RECROMANCER_DATABASE_URL", "").strip()
     if not url:
-        pytest.skip("no database URL configured (set RECROMANCER_DATABASE_URL)")
+        pytest.skip("no database URL is configured")
     return url
 
 
+@pytest.fixture(scope="session")
+def vector_extension_in_public(postgres_url: str) -> None:
+    """Ensure the ``vector`` extension lives in ``public`` (decision 14)."""
+    url = postgres_url
+    with psycopg.connect(url, autocommit=True) as conn:
+        conn.execute("CREATE EXTENSION IF NOT EXISTS vector SCHEMA public")
+        row = conn.execute(
+            "SELECT extnamespace::regnamespace::text FROM pg_extension "
+            "WHERE extname = 'vector'"
+        ).fetchone()
+    if row is None or row[0] != "public":
+        pytest.fail(f"vector extension is not in public: {row}")
+
+
 @pytest.fixture
-def pg_schema(postgres_url: str) -> Iterator[str]:
+def pg_schema(postgres_url: str, vector_extension_in_public: None) -> Iterator[str]:
     """A throwaway schema ``t_<hex>``, dropped with CASCADE afterwards."""
     with throwaway_schema(postgres_url) as name:
         yield name

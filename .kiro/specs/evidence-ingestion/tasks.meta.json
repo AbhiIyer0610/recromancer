@@ -211,6 +211,85 @@
         "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
         "timestamp": 1795713803615
       }
+    ],
+    "2.1 Write migration 0002 after re-verifying pgvector": [
+      {
+        "executionId": "87d98215-d2d3-4d66-a30e-8e3e170c6ee2",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795717725877
+      },
+      {
+        "executionId": "87d98215-d2d3-4d66-a30e-8e3e170c6ee2",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795717814335
+      }
+    ],
+    "2.2 Update the Postgres test fixtures and the migration store search path": [
+      {
+        "executionId": "87d98215-d2d3-4d66-a30e-8e3e170c6ee2",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795717814881
+      },
+      {
+        "executionId": "87d98215-d2d3-4d66-a30e-8e3e170c6ee2",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795717934158
+      }
+    ],
+    "2.3 Implement `PostgresEvidenceStore`": [
+      {
+        "executionId": "87d98215-d2d3-4d66-a30e-8e3e170c6ee2",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795717934085
+      },
+      {
+        "executionId": "87d98215-d2d3-4d66-a30e-8e3e170c6ee2",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795718220609
+      }
+    ],
+    "2.4 Write the Evidence_Store contract suite CT": [
+      {
+        "executionId": "87d98215-d2d3-4d66-a30e-8e3e170c6ee2",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795718221243
+      },
+      {
+        "executionId": "87d98215-d2d3-4d66-a30e-8e3e170c6ee2",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795718473789
+      }
+    ],
+    "2.5 Write the migration test MG": [
+      {
+        "executionId": "87d98215-d2d3-4d66-a30e-8e3e170c6ee2",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795718473945
+      },
+      {
+        "executionId": "87d98215-d2d3-4d66-a30e-8e3e170c6ee2",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795718545624
+      }
+    ],
+    "2.6 Group 2 gate": [
+      {
+        "executionId": "87d98215-d2d3-4d66-a30e-8e3e170c6ee2",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795718546388
+      },
+      {
+        "executionId": "87d98215-d2d3-4d66-a30e-8e3e170c6ee2",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795719071111
+      }
+    ],
+    "2. Group 2: Postgres migration, store, shared fixtures and contract tests": [
+      {
+        "executionId": "87d98215-d2d3-4d66-a30e-8e3e170c6ee2",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795719071202
+      }
     ]
   }
 }

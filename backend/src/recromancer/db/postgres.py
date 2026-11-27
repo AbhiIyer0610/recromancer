@@ -103,7 +103,7 @@ class PostgresMigrationStore:
             try:
                 conn = self._connect(self._conninfo)
                 conn.execute(
-                    sql.SQL("SET search_path TO {}").format(
+                    sql.SQL("SET search_path TO {}, public").format(
                         sql.Identifier(self._schema)
                     )
                 )

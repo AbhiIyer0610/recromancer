@@ -214,35 +214,55 @@ Conventions that apply to every task:
     - Confirm `lint-imports` prints `Contracts: 8 kept, 0 broken.` and the coverage floor holds. Report the final-message items (files changed, gate lines, mutation results, skips).
     - _Requirements: 3.1, 5.7, 6.1, 8.1, 8.7_
 
-- [ ] 2. Group 2: Postgres migration, store, shared fixtures and contract tests
-  - [ ] 2.1 Write migration 0002 after re-verifying pgvector
+- [x] 2. Group 2: Postgres migration, store, shared fixtures and contract tests
+  - [x] 2.1 Write migration 0002 after re-verifying pgvector
     - First run `docker exec recromancer-db-1 psql -U recromancer -d recromancer -At -c "SELECT name, default_version FROM pg_available_extensions WHERE name = 'vector';"`, confirm `default_version` is at least 0.5.0, and paste the command and its output into the header comment of the migration. Record the same text in the task notes for the Group 3 DEV_SETUP task. If the container is not running, start it with `docker compose up -d db` (from the repo root) and wait for readiness.
     - Create `backend/src/recromancer/db/migrations/0002_create_evidence_tables.sql` exactly as in the design's Data Models section: `evidence_items`, `evidence_chunks` with `vector(384)`, the check and foreign-key constraints, `evidence_chunks_item_idx`, and the HNSW index with `vector_cosine_ops` using plain `CREATE INDEX`. Leave `0001_create_vector_extension.sql` unmodified. UTF-8, LF, no BOM, no full-text column.
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.11_
+    - Notes (task 2.1):
+      - pgvector command: `docker exec recromancer-db-1 psql -U recromancer -d recromancer -At -c "SELECT name, default_version FROM pg_available_extensions WHERE name = 'vector';"`
+      - pgvector output: `vector|0.8.7` (at least 0.5.0, HNSW supported).
+      - Byte check: no `\r`, no BOM in `0002_create_evidence_tables.sql`.
+      - Probe (rolled-back transaction, throwaway schema `mig_probe`, `ON_ERROR_STOP=1`): `CREATE TABLE` x2, `CREATE INDEX` x2, then `pg_indexes` listed `evidence_chunks_embedding_hnsw`, `evidence_chunks_item_idx`, `evidence_chunks_pkey`, `evidence_items_pkey` (4 rows), then `ROLLBACK`.
 
-  - [ ] 2.2 Update the Postgres test fixtures and the migration store search path
+  - [x] 2.2 Update the Postgres test fixtures and the migration store search path
     - Change `PostgresMigrationStore` so that its search path is `<schema>, public` (decision 14); first grep the tests and confirm only the substring `search_path` is asserted, and update any test that matches the old form.
     - In `backend/tests/conftest.py` add the session-scoped fixture `vector_extension_in_public`, depending on `postgres_url`: run `CREATE EXTENSION IF NOT EXISTS vector SCHEMA public` once, then assert `SELECT extnamespace::regnamespace FROM pg_extension WHERE extname = 'vector'` returns `public`; if not, call `pytest.fail` (never skip). Make `pg_schema` depend on this fixture. Verify design Risk 9 (the role can create the extension in `public`, and dropping a throwaway schema with `CASCADE` leaves the extension in place) and record the result.
     - Change the skip text of the `postgres_url` fixture to `no database URL is configured` (decision 16); grep for any test asserting the old text first.
     - Confirm the existing migration and readiness tests still pass with and without `RECROMANCER_DATABASE_URL`.
     - _Requirements: 5.10_
+    - Notes (task 2.2):
+      - `PostgresMigrationStore` now runs `SET search_path TO <schema>, public` (schema still quoted with `sql.Identifier`). Tests only assert the substring `search_path` (`test_postgres_adapters.py`), so none needed changes. `pg_support.recorded_rows` keeps a schema-only path (it only reads `_schema_migrations`).
+      - `postgres_url` is now session-scoped (so the session fixture `vector_extension_in_public` can depend on it); skip text is `no database URL is configured` and no test asserted the old text.
+      - Risk 9 verified (psycopg, autocommit, URL literal): `CREATE EXTENSION IF NOT EXISTS vector SCHEMA public` succeeded; `extnamespace::regnamespace::text` was `public`. With throwaway schema `r9_probe` and `search_path = r9_probe, public`, the 0001 statement `CREATE EXTENSION IF NOT EXISTS vector` was a no-op (still `public`), a `vector(3)` column resolved, and after `DROP SCHEMA r9_probe CASCADE` the extension was still in `public`.
+      - Runs: without URL `20 passed, 15 skipped` (all skips `no database URL is configured`); with URL `35 passed`.
 
-  - [ ] 2.3 Implement `PostgresEvidenceStore`
+  - [x] 2.3 Implement `PostgresEvidenceStore`
     - Create `backend/src/recromancer/db/evidence_store.py` with `EMBEDDING_DIMENSIONS = 384` and `PostgresEvidenceStore(pool, *, workspace_id=DEFAULT_WORKSPACE_ID)` implementing the `EvidenceStore` port structurally. Imports `domain`, `db.postgres` private helpers, `psycopg`, `psycopg_pool`, `anyio` only; never `service` or `embed` (contracts C4, C7). Every method runs a sync function through `anyio.to_thread.run_sync`. Verify design Risk 4 (the installed `anyio.to_thread.run_sync` signature) and record it.
     - `replace_item`: validate every vector for length 384 and finite floats before connecting (`RecromancerError(VALIDATION_ERROR)` naming the chunk id and both lengths); then in one transaction upsert the item row, delete the item's chunks and insert the new chunks with `executemany`, vectors written as a `'[...]'` text literal built from `repr(float)` and cast with `%s::vector`; map driver errors to `DEPENDENCY_UNAVAILABLE` through `_safe_message`, `from None`. All queries filter on `workspace_id`. Reads parse `embedding::text` back to floats. Verify design Risks 3 and 8 here (untyped text parameter with `::vector` and `executemany`; `options` search path on pooled connections) and record the results.
     - Write `backend/tests/unit/test_evidence_store_errors.py` with `test_driver_error_has_no_conninfo` (mirrors the existing adapter test) and unit tests for the vector literal builder and the dimension and finiteness validation that need no database.
     - _Requirements: 5.7, 5.8, 5.9_
+    - Notes (task 2.3):
+      - Risk 4 verified: `anyio.to_thread.run_sync(func: Callable[[Unpack[PosArgsT]], T_Retval], *args, abandon_on_cancel: bool = False, cancellable: bool | None = None, limiter: CapacityLimiter | None = None) -> T_Retval`. The store calls it with the function only (no cancellation flag).
+      - Risk 3 verified against real Postgres (throwaway schema, migrations 0001+0002 via the real runner): an untyped `str` parameter with `%s::vector` works, including through `cursor.executemany`. A 2-chunk item written twice (replace is idempotent) read back with 2 chunks in position order, equal `EvidenceItem`, equal `Chunk`, `ingested_at` equal. Vectors are stored as float4, so they round-trip only approximately: max relative error 1.05e-07 (so the contract suite's 1e-6 tolerance holds; exact equality does not).
+      - Risk 8 verified: a `ConnectionPool(min_size=2, kwargs={"options": "-c search_path=<schema>,public"})` gave two distinct pooled connections that both reported `SHOW search_path` = `risk38_1a4b3217,public`. The schema was dropped with `DROP SCHEMA ... CASCADE`; the temp script was deleted.
+      - Gates: `pytest --no-cov tests/unit/test_evidence_store_errors.py -q` 8 passed; `ruff check .` and `ruff format --check .` clean; `mypy` no issues in 87 files; `lint-imports` `Contracts: 8 kept, 0 broken.`
 
-  - [ ] 2.4 Write the Evidence_Store contract suite CT
+  - [x] 2.4 Write the Evidence_Store contract suite CT
     - Create `backend/tests/contract/test_evidence_store_contract.py`, parametrized over `fake` and `postgres` as in `test_migration_store_contract.py`. Cases: empty bundle has no signatures; replace then `signatures`, `get_item`, `get_chunks` agree (vectors compared with relative tolerance 1e-6); replacing with fewer chunks leaves only the new chunks; a wrong vector length raises and leaves the old state; a failure injected after the delete (Postgres: a bad row in the batch; fake: `fail_on_item_ids`) leaves the old state; two bundle ids with the same item id do not interfere; another `workspace_id` sees nothing.
     - The Postgres variant uses `pg_schema`, a pool created with `kwargs={"options": f"-c search_path={schema},public"}`, and applies migrations 0001 and 0002 through the real runner. It skips with `no database URL is configured` when the variable is unset.
     - _Requirements: 5.8, 5.9, 5.10, 6.5_
+    - Notes (task 2.4):
+      - Cases (7, each over `fake` and `postgres`): empty bundle, replace then reads agree, fewer chunks, wrong vector length, failure after the delete, same item id in two bundles, other workspace sees nothing. The workspace case skips for `fake` (`fake store has no shared backing across workspaces`; `FakeEvidenceStore` keeps separate dicts per instance and Group 1 files were not modified).
+      - Failure case: Postgres sends a batch with a duplicate chunk id (PK violation after the upsert and delete) and expects `DEPENDENCY_UNAVAILABLE` with old item and chunks intact. The fake case sets the private `_fail_on_item_ids` after seeding, because the constructor argument would block the seed write for the same item id.
+      - Runs: without URL `6 passed, 8 skipped` (7 Postgres skips: `no database URL is configured`; 1 fake workspace skip). With URL `13 passed, 1 skipped` (the fake workspace skip). `ruff check`, `ruff format --check`, `mypy` and `lint-imports` (`Contracts: 8 kept, 0 broken.`) are clean.
+      - Mutation check: commented out `conn.execute(_DELETE_CHUNKS_SQL, ...)` in `evidence_store.py`. `test_replacing_with_fewer_chunks_keeps_only_new_chunks[postgres]` FAILED with `RecromancerError: replace_item failed: UniqueViolation (SQLSTATE 23505)` (the old chunk 0 was not deleted, so re-inserting it hit the primary key). Original SHA256 `7416630DE72EF9EFF6F5025EEB46091097F14CC9D7AC886047762693DCFE49F4`; restored from the backup, SHA256 identical; the case passes again.
 
-  - [ ] 2.5 Write the migration test MG
+  - [x] 2.5 Write the migration test MG
     - Create `backend/tests/integration/test_migration_0002.py`: apply 0001 then 0002 through `run(PostgresMigrationStore(url, schema=...), discover(...))`; assert both are recorded, both tables exist, `pg_indexes` lists the HNSW index with `vector_cosine_ops`; assert inserts violating the kind check, the url/path exclusive-or check, the vector dimension and the foreign key are rejected; assert deleting an item cascades to its chunks; a bytes check that the migration file has no BOM and no `\r`; a check that 0001 is unmodified. Skip with `no database URL is configured` when unset (the bytes check runs without a database).
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.6, 5.10, 5.11_
 
-  - [ ] 2.6 Group 2 gate
+  - [x] 2.6 Group 2 gate
     - Run the gate twice as described under Conventions. The run with the URL set must execute the Postgres contract and migration tests with no skips; the run without it must skip them with the reason `no database URL is configured`.
     - Confirm `lint-imports` (C4 and C7 hold for `db/evidence_store.py`) and the coverage floor. Report the final-message items.
     - _Requirements: 5.7, 5.10_

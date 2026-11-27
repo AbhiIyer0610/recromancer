@@ -6,6 +6,7 @@ import io
 import json
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
+from importlib.resources import files
 from pathlib import Path
 from urllib.parse import quote
 
@@ -14,7 +15,7 @@ import pytest
 from recromancer.config import Settings
 from recromancer.db import migrate
 from recromancer.db.postgres import PostgresMigrationStore
-from recromancer.db.runner import StoreError
+from recromancer.db.runner import StoreError, discover
 from tests.fakes import FAIL_MARKER, FakeClock, FakeMigrationStore
 
 # Built at runtime so no secret-shaped literal sits in the source. Both are >= 8
@@ -124,7 +125,11 @@ def test_packaged_migrations_apply_with_defaults_for_clock(tmp_path: Path) -> No
         dotenv_start=tmp_path,
     )
     assert code == 0
-    assert out.getvalue().splitlines() == ["applied 0001_create_vector_extension.sql"]
+    expected = [
+        f"applied {m.name}" for m in discover(files("recromancer.db") / "migrations")
+    ]
+    assert expected[0] == "applied 0001_create_vector_extension.sql"
+    assert out.getvalue().splitlines() == expected
     (_, applied_at) = store.recorded["0001_create_vector_extension.sql"]
     assert applied_at.tzinfo is not None
     assert applied_at.utcoffset() is not None
