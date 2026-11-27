@@ -10,7 +10,7 @@ import typing
 from collections.abc import Mapping, MutableMapping
 from pathlib import Path
 from typing import Any, ClassVar, Literal
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 from pydantic import SecretStr, ValidationError, field_validator
 from pydantic_settings import (
@@ -27,9 +27,15 @@ ADMIN_TOKEN_PLACEHOLDER = "change-me-local-only"
 MIN_ADMIN_TOKEN_LENGTH = 32
 MIN_REDACTED_SECRET_LENGTH = 8
 DEFAULT_POSTGRES_PORT = 5432
+DEFAULT_EMBEDDING_MODEL_ID = "BAAI/bge-small-en-v1.5"
+MAX_EMBEDDING_MODEL_ID_LENGTH = 200
 
 _DATABASE_URL_SCHEMES = frozenset({"postgresql", "postgres"})
 _DATABASE_URL_ERROR = "database_url must be a postgresql URL with a host"
+_EMBEDDING_MODEL_ID_ERROR = (
+    "embedding_model_id must be 1 to 200 characters with no whitespace"
+)
+_CACHE_DIR_ERROR = "embedding_cache_dir must be an absolute path"
 _REDACTED = "***"
 
 
@@ -81,6 +87,9 @@ class Settings(BaseSettings):
     admin_token: SecretStr | None = None
     anthropic_api_key: SecretStr | None = None
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+    embedding_model_id: str = DEFAULT_EMBEDDING_MODEL_ID
+    embedding_cache_dir: Path | None = None
+    embedding_offline: bool = False
 
     _SECRET_FIELDS: ClassVar[tuple[str, ...]] = (
         "database_url",
@@ -105,6 +114,29 @@ class Settings(BaseSettings):
     def _blank_secret_is_unset(cls, value: Any) -> Any:
         if isinstance(value, str) and not value.strip():
             return None
+        return value
+
+    @field_validator("embedding_model_id", mode="after")
+    @classmethod
+    def _check_embedding_model_id(cls, value: str) -> str:
+        if not 1 <= len(value) <= MAX_EMBEDDING_MODEL_ID_LENGTH or any(
+            ch.isspace() for ch in value
+        ):
+            raise ValueError(_EMBEDDING_MODEL_ID_ERROR)
+        return value
+
+    @field_validator("embedding_cache_dir", mode="before")
+    @classmethod
+    def _blank_cache_dir_is_unset(cls, value: Any) -> Any:
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
+
+    @field_validator("embedding_cache_dir", mode="after")
+    @classmethod
+    def _check_cache_dir_absolute(cls, value: Path | None) -> Path | None:
+        if value is not None and not value.is_absolute():
+            raise ValueError(_CACHE_DIR_ERROR)
         return value
 
     @field_validator("database_url", mode="after")
@@ -229,6 +261,19 @@ class Settings(BaseSettings):
                 if len(raw) >= MIN_REDACTED_SECRET_LENGTH:
                     values.append(raw)
         return tuple(values)
+
+    def redaction_values(self) -> tuple[str, ...]:
+        """``secret_values()`` plus the database password, raw and percent-decoded.
+
+        Driver messages often quote the password without the rest of the URL.
+        """
+        seed = list(self.secret_values())
+        password = urlsplit(self.database_url.get_secret_value()).password
+        if password:
+            for form in (password, unquote(password)):
+                if len(form) >= MIN_REDACTED_SECRET_LENGTH:
+                    seed.append(form)
+        return tuple(seed)
 
 
 def _format_error(unknown: list[str], invalid: list[str]) -> str:

@@ -290,6 +290,85 @@
         "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
         "timestamp": 1795719071202
       }
+    ],
+    "3.1 Add the Settings fields and `redaction_values`": [
+      {
+        "executionId": "b1e2375d-1e85-4f2e-9f85-9092b358c906",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795786484040
+      },
+      {
+        "executionId": "b1e2375d-1e85-4f2e-9f85-9092b358c906",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795786638081
+      }
+    ],
+    "3.2 Add the bootstrap helpers for the store and the service": [
+      {
+        "executionId": "b1e2375d-1e85-4f2e-9f85-9092b358c906",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795786645560
+      },
+      {
+        "executionId": "b1e2375d-1e85-4f2e-9f85-9092b358c906",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795786847202
+      }
+    ],
+    "3.3 Implement `ingest_cli.main()` and its tests": [
+      {
+        "executionId": "b1e2375d-1e85-4f2e-9f85-9092b358c906",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795786856436
+      },
+      {
+        "executionId": "b1e2375d-1e85-4f2e-9f85-9092b358c906",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795789567483
+      }
+    ],
+    "3.4 Write the DEV_SETUP section": [
+      {
+        "executionId": "b1e2375d-1e85-4f2e-9f85-9092b358c906",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795789575070
+      },
+      {
+        "executionId": "b1e2375d-1e85-4f2e-9f85-9092b358c906",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795789706211
+      }
+    ],
+    "3.5 Write the CLI-to-Postgres integration test with the Fake_Embedder": [
+      {
+        "executionId": "b1e2375d-1e85-4f2e-9f85-9092b358c906",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795789777994
+      },
+      {
+        "executionId": "b1e2375d-1e85-4f2e-9f85-9092b358c906",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795789873695
+      }
+    ],
+    "3.6 Group 3 gate": [
+      {
+        "executionId": "b1e2375d-1e85-4f2e-9f85-9092b358c906",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795789881974
+      },
+      {
+        "executionId": "b1e2375d-1e85-4f2e-9f85-9092b358c906",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795790156740
+      }
+    ],
+    "3. Group 3: Settings, composition root and CLI with fakes": [
+      {
+        "executionId": "b1e2375d-1e85-4f2e-9f85-9092b358c906",
+        "chatSessionId": "sess_86a3f98b-1016-4dc1-a434-6804f19267fc",
+        "timestamp": 1795790156847
+      }
     ]
   }
 }

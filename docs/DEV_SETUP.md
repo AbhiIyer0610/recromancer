@@ -69,3 +69,51 @@ environment variables are set (without printing their values).
 
 Your OS (Windows, macOS, Linux), the output of the "Check" commands for the tools you installed, and which
 accounts and keys are ready (yes or no only; never paste a key).
+
+## Evidence ingestion
+
+Run both commands from `backend/` with the venv active. The first applies the schema migrations, the second
+ingests the packaged Ledgerline sample bundle:
+
+```powershell
+python -m recromancer.db.migrate
+python -m recromancer.ingest_cli src\recromancer\ingest\fixtures\ledgerline
+```
+
+The ingest command prints one line, `items=<n> chunks=<n> unchanged=<n> absent=<n>`. A second run over the same
+bundle prints `chunks=0`, because nothing changed.
+
+Until the real embedding adapter lands (Group 4), the CLI without an injected embedder exits 1 with
+`no embedder is configured`. This is intentional: ingestion fails closed instead of storing chunks without vectors.
+
+### pgvector version check
+
+The HNSW index needs pgvector 0.5.0 or later. Check the version the container offers:
+
+```powershell
+docker exec recromancer-db-1 psql -U recromancer -d recromancer -At -c "SELECT name, default_version FROM pg_available_extensions WHERE name = 'vector';"
+```
+
+Recorded output: `vector|0.8.7`.
+
+### Embedding cache directory
+
+By default `RECROMANCER_EMBEDDING_CACHE_DIR` is unset, and fastembed then uses its own cache under the temp
+directory, which Windows may clean. Set a stable absolute path instead, for example
+`C:\Users\<you>\.cache\recromancer`. In PowerShell:
+
+```powershell
+$env:RECROMANCER_EMBEDDING_CACHE_DIR = "C:\Users\<you>\.cache\recromancer"
+```
+
+or put the same key in `.env`. A related setting, `RECROMANCER_EMBEDDING_OFFLINE`, is described with the
+embedding adapter in Group 4.
+
+### Venv check
+
+```powershell
+cd backend; python -c "import onnxruntime"
+```
+
+This must exit 0. If it crashes with an access violation, rebuild `.venv` from a python.org CPython 3.11. The
+miniconda base ships an older C++ runtime.

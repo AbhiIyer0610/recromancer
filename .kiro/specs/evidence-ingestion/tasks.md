@@ -267,38 +267,46 @@ Conventions that apply to every task:
     - Confirm `lint-imports` (C4 and C7 hold for `db/evidence_store.py`) and the coverage floor. Report the final-message items.
     - _Requirements: 5.7, 5.10_
 
-- [ ] 3. Group 3: Settings, composition root and CLI with fakes
-  - [ ] 3.1 Add the Settings fields and `redaction_values`
+- [x] 3. Group 3: Settings, composition root and CLI with fakes
+  - [x] 3.1 Add the Settings fields and `redaction_values`
     - In `backend/src/recromancer/config.py` add `embedding_model_id` (default `BAAI/bge-small-en-v1.5`, 1 to 200 characters, no whitespace), `embedding_cache_dir` (`Path | None`, absolute when set, blank means `None`) and `embedding_offline` (bool, default false), all through `Settings.from_env` with the `RECROMANCER_` prefix, and `redaction_values()` returning `secret_values()` plus the database password.
     - Replace the private `_redaction_seed` in `db/migrate.py` with `Settings.redaction_values()` (decision 15) and keep the existing migrate tests green.
     - Add `RECROMANCER_EMBEDDING_MODEL_ID=BAAI/bge-small-en-v1.5`, `RECROMANCER_EMBEDDING_CACHE_DIR=` (blank) and `RECROMANCER_EMBEDDING_OFFLINE=false` to `.env.example`.
     - Extend `backend/tests/unit/test_config.py`: defaults, a relative cache dir rejected, blank cache dir is `None`, whitespace in the model id rejected, `redaction_values` content; and a test that every new variable appears in `.env.example`.
     - _Requirements: 4.2, 7.2_
 
-  - [ ] 3.2 Add the bootstrap helpers for the store and the service
+  - [x] 3.2 Add the bootstrap helpers for the store and the service
     - In `backend/src/recromancer/bootstrap.py` add `evidence_store(settings)` (a context manager that opens and closes the pool, `pool.open(wait=True, timeout=10)`, mapping `PoolTimeout` to `RecromancerError(DEPENDENCY_UNAVAILABLE, "database unavailable")`) and `build_ingestion_service(settings, *, store, embedder, clock)`. The latter binds `read_bundle` and `functools.partial(chunk_item, size=DEFAULT_CHUNK_SIZE, overlap=DEFAULT_CHUNK_OVERLAP)` and the same two constants into the service, and raises `RecromancerError(CONFIG_INVALID, "embedder dimensions A != column dimensions 384")` naming both numbers before returning, so nothing is written (R5.12). Typed assignments let mypy prove the structural port match.
     - `build_embedder` is not written here (it needs `FastembedEmbedder`, task 4.3 and 4.4).
     - Write `backend/tests/unit/test_bootstrap_ingestion.py` (BS): the dimension mismatch fails before any store call (the fake store shows no write), a matching embedder builds a working service that ingests a small bundle, and the helper wires the real `read_bundle` and `chunk_item`.
     - Run `lint-imports` and record that C6 and C8 hold.
     - _Requirements: 5.12, 6.2_
+    - Notes (task 3.2):
+      - `lint-imports`: `Contracts: 8 kept, 0 broken.` C6 (`only-bootstrap-wires-adapters`) and C8 (`layer-order`) are KEPT.
+      - `evidence_store` uses the existing `build_pool` (unchanged), `pool.open(wait=True, timeout=10)`, maps `PoolTimeout` to `DEPENDENCY_UNAVAILABLE "database unavailable"` (`from None`) and closes the pool in `finally`. `Settings.database_url` always has a default, so the missing-URL guard only fires on an empty secret and raises `CONFIG_INVALID "database url is not set"`.
+      - Tests: `backend/tests/unit/test_bootstrap_ingestion.py` (6 tests, fake pool via monkeypatch of `bootstrap.build_pool`, no database).
 
-  - [ ] 3.3 Implement `ingest_cli.main()` and its tests
+  - [x] 3.3 Implement `ingest_cli.main()` and its tests
     - Extend `backend/src/recromancer/ingest_cli.py` (created in task 1.4) with `main(argv, *, environ, store_factory, embedder_factory, stdout, stderr, clock, dotenv_start)` and an `if __name__ == "__main__"` guard. Order of work: argument count first (usage line `usage: python -m recromancer.ingest_cli <bundle-dir>` on stderr, return 1, no factory called); `load_dotenv`; `Settings.from_env`; `configure_logging(stream=err, secret_values=settings.redaction_values())`; bundle directory check; `with store_factory(settings) as store`; `embedder_factory(settings)`; `build_ingestion_service`; `asyncio.run(service.ingest(make_fetch(root)))`; print exactly `items=<n> chunks=<n> unchanged=<n> absent=<n>` to stdout and return 0.
     - Failure contract: exactly one stderr line built as `" ".join(redact_text(message, settings.redaction_values()).split())`, nothing on stdout, return 1; unexpected exceptions print `unexpected error: <ClassName>`. Defaults for `store_factory` come from `bootstrap.evidence_store`. When no `embedder_factory` is injected, `main` fails closed with `no embedder is configured` (one line, exit 1) until task 4.4 wires `bootstrap.build_embedder`. `ingest_cli` imports `bootstrap`, `config`, `observability`, `service.ports` and `domain` only, never an adapter or `ingest` directly.
     - Write `backend/tests/unit/test_ingest_cli.py` (CLI) with fakes only: success line and exit 0, second run prints `chunks=0` (R7.6), relative path resolved against the current working directory, absolute and backslash paths, zero or two arguments print usage and call no factory, missing directory, invalid bundle, invalid settings, store failure whose message contains the database password, embedder failure, no embedder configured, the environment snapshot unchanged other than through `load_dotenv`, and `python -m recromancer.ingest_cli` importability (R7.1).
     - Named test `test_failure_prints_one_redacted_line_without_body` (R7.4), parametrized over invalid bundle with a sentinel body, store failure containing the password, embedder failure, missing directory and invalid settings: exactly one stderr line, empty stdout, exit code 1, and neither sentinel nor password appears.
     - _Requirements: 4.8, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8_
 
-  - [ ] 3.4 Write the DEV_SETUP section
+  - [x] 3.4 Write the DEV_SETUP section
     - Add a new section to `docs/DEV_SETUP.md` containing: the commands `python -m recromancer.db.migrate` followed by `python -m recromancer.ingest_cli src\recromancer\ingest\fixtures\ledgerline`, both run from `backend/` (R7.9); the pgvector query and its recorded output from task 2.1 (R5.5); the cache directory example `C:\Users\<you>\.cache\recromancer` set through `RECROMANCER_EMBEDDING_CACHE_DIR` with the PowerShell form `$env:RECROMANCER_EMBEDDING_CACHE_DIR = "C:\Users\<you>\.cache\recromancer"` (decision 3); and the venv check `cd backend; python -c "import onnxruntime"` that must exit 0 (design V0). Leave the existing localhost lines untouched. The R4.11 fastembed findings are added in task 4.6.
     - _Requirements: 5.5, 7.9_
 
-  - [ ] 3.5 Write the CLI-to-Postgres integration test with the Fake_Embedder
+  - [x] 3.5 Write the CLI-to-Postgres integration test with the Fake_Embedder
     - Create `backend/tests/integration/test_ingest_cli_postgres.py`. It skips with `no database URL is configured` when the variable is unset. It creates a throwaway schema through the shared fixtures (`pg_schema`, which also provides the `vector` type from `public`), applies migrations 0001 and 0002, builds an `environ` mapping with the database URL pointing at that schema through the search path, and calls `main([<ledgerline path>], environ=environ, embedder_factory=lambda s: FakeEmbedder(), stdout=..., stderr=...)`. `FakeEmbedder` lives in `tests/fakes.py`, so this is a test, not a CLI command.
     - Assert exit code 0 and stdout exactly `items=N chunks=M unchanged=0 absent=0` with `N` equal to the Ledgerline item count and `M` equal to the stored chunk count; run again and assert `chunks=0 unchanged=N`; assert nothing was written to stderr. Verify design Risk 14 (`asyncio.run` inside `main` on Windows with sync psycopg in worker threads) and record the result.
     - _Requirements: 4.8, 5.8, 6.2, 7.3, 7.6, 7.8_
+    - Notes (task 3.5):
+      - The CLI is pointed at the throwaway schema by the percent-encoded URL query `options=-c%20search_path%3D<schema>%2Cpublic`; `build_pool` and all production code are unchanged. `Settings` accepts a database URL with a query string.
+      - Risk 14 result: the orchestrator's one-off check showed psycopg honours the URL options both directly and through `psycopg_pool.ConnectionPool` (`direct search_path = r14_probe,public`, `vector cast = [1,2]`, `pool search_paths = ['r14_probe,public']`, `schema dropped = True`). In addition, `asyncio.run` inside `main` on Windows with sync psycopg in worker threads completed both runs in this test (test call 0.64 s, 1.13 s total).
+      - Observed N = 31 items and M = 46 chunks. Run 1 printed `items=31 chunks=46 unchanged=0 absent=0`, run 2 `items=31 chunks=0 unchanged=31 absent=0`, stderr empty both times, and `to_regclass('public.evidence_items')` is NULL.
 
-  - [ ] 3.6 Group 3 gate
+  - [x] 3.6 Group 3 gate
     - Run the gate twice as described under Conventions. The run with the URL set must execute `test_ingest_cli_postgres.py` without skipping; the run without it must skip with `no database URL is configured`.
     - Confirm `lint-imports` and the coverage floor. Report the final-message items, and state that the default CLI path (no injected embedder) is intentionally closed until Group 4.
     - _Requirements: 7.1, 7.8_

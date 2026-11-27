@@ -5,6 +5,7 @@ environment is never read or modified.
 """
 
 from collections.abc import Mapping
+from pathlib import Path
 
 import pytest
 from pydantic import SecretStr, ValidationError
@@ -264,6 +265,9 @@ def test_log_safe_summary_defaults() -> None:
         "admin_token": "***",
         "anthropic_api_key": "***",
         "log_level": "INFO",
+        "embedding_model_id": "BAAI/bge-small-en-v1.5",
+        "embedding_cache_dir": None,
+        "embedding_offline": False,
     }
 
 
@@ -327,3 +331,93 @@ def test_placeholder_rejected_independently_of_length_rule(
     err = _error(_prod(RECROMANCER_ADMIN_TOKEN=ADMIN_TOKEN_PLACEHOLDER))
     assert "RECROMANCER_ADMIN_TOKEN" in err.message
     assert ADMIN_TOKEN_PLACEHOLDER not in err.message
+
+
+# --- embedding settings and redaction_values ------------------------------------
+
+_MODEL_VAR = "RECROMANCER_EMBEDDING_MODEL_ID"
+_CACHE_VAR = "RECROMANCER_EMBEDDING_CACHE_DIR"
+_OFFLINE_VAR = "RECROMANCER_EMBEDDING_OFFLINE"
+
+
+def test_embedding_defaults() -> None:
+    s = Settings.from_env({})
+    assert s.embedding_model_id == "BAAI/bge-small-en-v1.5"
+    assert s.embedding_cache_dir is None
+    assert s.embedding_offline is False
+
+
+def test_embedding_values_are_loaded(tmp_path: Path) -> None:
+    s = Settings.from_env(
+        {
+            _MODEL_VAR: "org/model-x",
+            _CACHE_VAR: str(tmp_path),
+            _OFFLINE_VAR: "true",
+        }
+    )
+    assert s.embedding_model_id == "org/model-x"
+    assert s.embedding_cache_dir == tmp_path
+    assert s.embedding_offline is True
+
+
+@pytest.mark.parametrize("blank", ["", "   "])
+def test_blank_cache_dir_is_none(blank: str) -> None:
+    assert Settings.from_env({_CACHE_VAR: blank}).embedding_cache_dir is None
+
+
+def test_relative_cache_dir_is_rejected() -> None:
+    err = _error({_CACHE_VAR: "models/cache"})
+    assert _CACHE_VAR in err.message
+    assert "models/cache" not in err.message
+
+
+@pytest.mark.parametrize("model_id", ["", "bad id", "a\tb", "x" * 201])
+def test_invalid_model_id_is_rejected(model_id: str) -> None:
+    err = _error({_MODEL_VAR: model_id})
+    assert _MODEL_VAR in err.message
+
+
+def test_model_id_length_boundary() -> None:
+    assert Settings.from_env({_MODEL_VAR: "x" * 200}).embedding_model_id == "x" * 200
+    assert Settings.from_env({_MODEL_VAR: "x"}).embedding_model_id == "x"
+
+
+@pytest.mark.parametrize(("raw", "expected"), [("true", True), ("false", False)])
+def test_embedding_offline_parsing(raw: str, expected: bool) -> None:
+    assert Settings.from_env({_OFFLINE_VAR: raw}).embedding_offline is expected
+
+
+def test_embedding_offline_rejects_garbage() -> None:
+    assert _OFFLINE_VAR in _error({_OFFLINE_VAR: "maybe"}).message
+
+
+def test_redaction_values_adds_database_password() -> None:
+    password = "p%40ssw0rd-long"
+    url = f"postgresql://app:{password}@db.example.com:5432/app"
+    token = "t" * 40
+    s = Settings.from_env(
+        {"RECROMANCER_DATABASE_URL": url, "RECROMANCER_ADMIN_TOKEN": token}
+    )
+    values = s.redaction_values()
+    assert values[: len(s.secret_values())] == s.secret_values()
+    assert token in values
+    assert url in values
+    assert password in values
+    assert "p@ssw0rd-long" in values
+
+
+def test_redaction_values_skips_short_or_missing_password() -> None:
+    short = Settings.from_env({"RECROMANCER_DATABASE_URL": "postgres://u:short@h/x"})
+    assert short.redaction_values() == short.secret_values()
+    none = Settings.from_env({"RECROMANCER_DATABASE_URL": "postgres://u@h/x"})
+    assert none.redaction_values() == none.secret_values()
+
+
+def test_every_setting_is_listed_in_env_example() -> None:
+    text = (Path(__file__).resolve().parents[3] / ".env.example").read_text(
+        encoding="utf-8"
+    )
+    names = {line.partition("=")[0] for line in text.splitlines()}
+    for field in Settings.model_fields:
+        assert f"RECROMANCER_{field.upper()}" in names
+    assert "RECROMANCER_EMBEDDING_MODEL_ID=BAAI/bge-small-en-v1.5" in text.splitlines()

@@ -21,14 +21,8 @@ from importlib import resources
 from importlib.resources.abc import Traversable
 from pathlib import Path
 from typing import Protocol, TextIO
-from urllib.parse import unquote, urlsplit
 
-from recromancer.config import (
-    MIN_REDACTED_SECRET_LENGTH,
-    ConfigError,
-    Settings,
-    load_dotenv,
-)
+from recromancer.config import ConfigError, Settings, load_dotenv
 from recromancer.db.postgres import PostgresMigrationStore
 from recromancer.db.runner import (
     MigrationError,
@@ -59,20 +53,6 @@ def _default_store(settings: Settings) -> MigrationStore:
 
 def _default_migrations_dir() -> Traversable:
     return resources.files("recromancer.db") / "migrations"
-
-
-def _redaction_seed(settings: Settings) -> tuple[str, ...]:
-    """``secret_values()`` plus the database password alone, raw and percent-decoded.
-
-    Driver messages often quote the password without the rest of the URL.
-    """
-    seed = list(settings.secret_values())
-    password = urlsplit(settings.database_url.get_secret_value()).password
-    if password:
-        for form in (password, unquote(password)):
-            if len(form) >= MIN_REDACTED_SECRET_LENGTH:
-                seed.append(form)
-    return tuple(seed)
 
 
 def _one_line(text: str) -> str:
@@ -110,7 +90,7 @@ def main(
     try:
         load_dotenv(environ=environ, start=dotenv_start)
         settings = Settings.from_env(environ)
-        secrets = _redaction_seed(settings)
+        secrets = settings.redaction_values()
         factory = _default_store if store_factory is None else store_factory
         store = factory(settings)
         migrations = discover(
